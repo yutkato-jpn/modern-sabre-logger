@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getMatch, getPoints, updatePoint } from '@/utils/supabase'
 import { Match, Point } from '@/utils/supabase'
@@ -23,18 +23,18 @@ export default function EditMatchPage({ params }: EditMatchPageProps) {
   const [points, setPoints] = useState<Point[]>([])
   const [editingPoint, setEditingPoint] = useState<Point | null>(null)
 
-  useEffect(() => {
-    loadData()
-  }, [params.id])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const matchData = await getMatch(params.id)
     if (matchData) {
       setMatch(matchData)
     }
     const pointsData = await getPoints(params.id)
     setPoints(pointsData)
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleEditPoint = (point: Point) => {
     setEditingPoint(point)

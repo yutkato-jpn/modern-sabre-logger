@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getMatch, getPoints, addPoint, updateMatchScore, deleteLatestPoint } from '@/utils/supabase'
 import { Match, Point } from '@/utils/supabase'
@@ -65,11 +65,7 @@ export default function MatchPage({ params }: MatchPageProps) {
     }
   }, [isRunning, time])
 
-  useEffect(() => {
-    loadMatch()
-  }, [params.id])
-
-  const loadMatch = async () => {
+  const loadMatch = useCallback(async () => {
     const matchData = await getMatch(params.id)
     if (matchData) {
       setMatch(matchData)
@@ -82,7 +78,11 @@ export default function MatchPage({ params }: MatchPageProps) {
       setScoreMe(meScore)
       setScoreOpponent(opponentScore)
     }
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    loadMatch()
+  }, [loadMatch])
 
   const handleScoreTap = (color: 'red' | 'green') => {
     if (!match) return

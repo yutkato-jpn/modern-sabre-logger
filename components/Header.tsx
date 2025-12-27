@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { LogOut, User } from 'lucide-react'
 
@@ -46,10 +47,13 @@ export default function Header() {
       <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {user.user_metadata?.avatar_url ? (
-            <img
+            <Image
               src={user.user_metadata.avatar_url}
               alt={user.user_metadata?.full_name || user.email || 'User'}
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-full"
+              unoptimized
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-neon-blue flex items-center justify-center">
