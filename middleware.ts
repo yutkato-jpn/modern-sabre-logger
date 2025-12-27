@@ -15,12 +15,12 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: any) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach((cookie: any) => request.cookies.set(cookie.name, cookie.value))
           supabaseResponse = NextResponse.next({
             request,
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+          cookiesToSet.forEach((cookie: any) =>
+            supabaseResponse.cookies.set(cookie.name, cookie.value, cookie.options)
           )
         },
       },
