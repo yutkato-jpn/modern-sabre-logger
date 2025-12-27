@@ -35,7 +35,7 @@ export default function EditPointModal({ point, isOpen, onClose, onSave }: EditP
   const handleSituationSelect = (situation: Situation) => {
     setSelectedSituation(situation)
     // フレーズが新しいシチュエーションに存在しない場合はリセット
-    if (!TAGS[situation].includes(selectedPhrase)) {
+    if (!(TAGS[situation] as readonly string[]).includes(selectedPhrase)) {
       setSelectedPhrase(TAGS[situation][0] as Phrase)
     }
     setStep(2)
