@@ -155,6 +155,7 @@ export default function EditMatchPage({ params }: EditMatchPageProps) {
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* 編集モーダル */}
@@ -166,8 +167,6 @@ export default function EditMatchPage({ params }: EditMatchPageProps) {
           onSave={handleUpdatePoint}
         />
       )}
-        </div>
-      </div>
     </div>
   )
 }

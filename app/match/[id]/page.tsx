@@ -358,6 +358,7 @@ export default function MatchPage({ params }: MatchPageProps) {
             <span>試合終了</span>
           </button>
         </div>
+        </div>
       </div>
 
       {/* ポイント記録モーダル */}
@@ -371,8 +372,6 @@ export default function MatchPage({ params }: MatchPageProps) {
           onSave={handlePointSave}
         />
       )}
-        </div>
-      </div>
     </div>
   )
 }
