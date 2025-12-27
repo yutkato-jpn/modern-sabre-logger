@@ -3,6 +3,8 @@ import OpenAI from 'openai'
 import { getRecentPointsWithMatches } from '@/utils/supabase'
 import { createClient } from '@/utils/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // デバッグ: 環境変数の存在確認（値は出力しない）
