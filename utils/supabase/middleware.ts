@@ -33,16 +33,11 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // ユーザー情報を取得
-  const { data: { user } } = await supabase.auth.getUser()
+  // セッションを更新する（これは必須）
+  await supabase.auth.getUser()
 
-  // ★診断モード: リダイレクトを一切行わず、ログだけ出力して通す
-  if (user) {
-    console.log('[Middleware] User is logged in:', user.email)
-  } else {
-    console.log('[Middleware] No user found')
-  }
-
-  // リダイレクトロジックを削除し、そのままページを表示させる
+  // ★重要: ここにあった「if (!user) redirect...」などの分岐は全て削除しました。
+  // Middlewareは常に処理を続行させます。
+  
   return response
 }
