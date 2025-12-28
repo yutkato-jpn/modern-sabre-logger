@@ -42,27 +42,10 @@ export default function LoginPage() {
     checkUser()
   }, [router, supabase])
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setIsLoading(true)
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (error) {
-        console.error('Error signing in:', error)
-        alert('ログインに失敗しました: ' + error.message)
-        setIsLoading(false)
-      }
-      // 成功時はOAuthフローにリダイレクトされるため、ここでは何もしない
-    } catch (error) {
-      console.error('Unexpected error:', error)
-      alert('予期しないエラーが発生しました')
-      setIsLoading(false)
-    }
+    // サーバー側のAPIルートに遷移（PKCE VerifierがCookieに保存される）
+    window.location.href = '/auth/login?provider=google'
   }
 
   return (
