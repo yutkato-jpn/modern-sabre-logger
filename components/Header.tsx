@@ -31,26 +31,30 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      // サーバーサイドのログアウトAPIを呼び出し
+      // サーバーサイドのログアウトAPIを呼び出し（POSTリクエスト）
       const response = await fetch('/auth/signout', {
         method: 'POST',
+        credentials: 'include', // クッキーを含める
       })
 
-      if (response.ok) {
-        // リダイレクトはサーバー側で処理されるが、念のためクライアント側でも処理
+      if (response.redirected) {
+        // サーバー側でリダイレクトされた場合
+        window.location.href = '/login'
+      } else if (response.ok) {
+        // リダイレクトされなかった場合、手動でリダイレクト
         router.push('/login')
         router.refresh()
       } else {
         console.error('Logout failed:', response.statusText)
         // フォールバック: クライアント側でログアウト
         await supabase.auth.signOut()
-        router.push('/login')
+        window.location.href = '/login'
       }
     } catch (error) {
       console.error('Error during logout:', error)
       // フォールバック: クライアント側でログアウト
       await supabase.auth.signOut()
-      router.push('/login')
+      window.location.href = '/login'
     }
   }
 

@@ -21,16 +21,14 @@ export async function POST(req: NextRequest) {
               cookieStore.set(name, value, options)
             })
           } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Server Componentからの呼び出しエラーは無視
           }
         },
       },
     }
   )
 
-  // サーバー側のセッションを削除
+  // サーバー側でセッションを破棄（これによりsetAllでクッキー削除が走る）
   await supabase.auth.signOut()
 
   // ログアウト後はログインページへリダイレクト
