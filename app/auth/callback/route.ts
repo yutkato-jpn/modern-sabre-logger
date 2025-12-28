@@ -1,10 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { type NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
@@ -21,9 +28,11 @@ export async function GET(request: Request) {
           },
           setAll(cookiesToSet: any) {
             try {
-              cookiesToSet.forEach(({ name, value, options }: any) =>
+              cookiesToSet.forEach(({ name, value, options }: any) => {
                 cookieStore.set(name, value, options)
-              )
+                // ResponseにもCookieを設定
+                response.cookies.set(name, value, options)
+              })
             } catch {
               // ignore
             }
@@ -60,7 +69,10 @@ export async function GET(request: Request) {
         </html>
       `
       return new NextResponse(html, {
-        headers: { 'Content-Type': 'text/html' },
+        headers: {
+          'Content-Type': 'text/html',
+          ...Object.fromEntries(response.headers.entries()),
+        },
       })
     } else {
       // エラー時

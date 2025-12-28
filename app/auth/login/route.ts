@@ -1,11 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
-import { redirect } from 'next/navigation'
+import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { type NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
   const cookieStore = cookies()
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
@@ -19,9 +25,11 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet: any) {
           try {
-            cookiesToSet.forEach(({ name, value, options }: any) =>
+            cookiesToSet.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options)
-            )
+              // ResponseにもCookieを設定
+              response.cookies.set(name, value, options)
+            })
           } catch (error) {
             // Server Action/Route Handler context
           }
@@ -34,7 +42,7 @@ export async function GET(request: NextRequest) {
   const provider = searchParams.get('provider') as 'google' | null
 
   if (!provider) {
-    return redirect('/login?error=no_provider')
+    return NextResponse.redirect(new URL('/login?error=no_provider', request.url))
   }
 
   // 2. Google認証の開始URLを発行
@@ -52,11 +60,14 @@ export async function GET(request: NextRequest) {
   })
 
   if (error) {
-    return redirect(`/login?error=${error.message}`)
+    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url))
   }
 
   // 3. Googleの認証画面へリダイレクト
   // この時点で supabase が自動的に Verifier を Cookie に保存してくれる
-  return redirect(data.url)
+  // Cookieが確実に設定されるように、NextResponse.redirectを使用
+  return NextResponse.redirect(data.url, {
+    headers: response.headers,
+  })
 }
 
