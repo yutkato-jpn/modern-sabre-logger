@@ -27,12 +27,13 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // セッションを更新（重要: これにより認証状態が確実に反映される）
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   // ログインページ以外で未ログインの場合、ログインページにリダイレクト
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
