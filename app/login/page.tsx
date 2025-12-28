@@ -2,13 +2,34 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 import { LogIn } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ), [])
+
+  useEffect(() => {
+    const cleanup = async () => {
+      try {
+        // 1. クライアント側（メモリ・LocalStorage）の消去
+        await supabase.auth.signOut()
+        localStorage.clear()
+
+        // 2. サーバー側（クッキー）の消去
+        await fetch('/api/auth/cleanup')
+        console.log('Session cleaned up')
+      } catch (error) {
+        console.error('Cleanup error:', error)
+      }
+    }
+
+    cleanup()
+  }, [supabase])
 
   useEffect(() => {
     // 既にログインしている場合はホームにリダイレクト
