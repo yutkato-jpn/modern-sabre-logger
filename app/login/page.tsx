@@ -30,17 +30,6 @@ export default function LoginPage() {
     cleanup()
   }, [supabase])
 
-  useEffect(() => {
-    // 既にログインしている場合はホームにリダイレクト
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        router.push('/')
-      }
-    }
-    checkUser()
-  }, [router, supabase])
-
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6">
       <div className="max-w-md w-full">

@@ -34,10 +34,25 @@ export async function updateSession(request: NextRequest) {
   )
 
   // セッションを更新する（これは必須）
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // ★重要: ここにあった「if (!user) redirect...」などの分岐は全て削除しました。
-  // Middlewareは常に処理を続行させます。
+  const url = request.nextUrl.clone()
+
+  // ログインページと認証関連のパスは常に許可
+  if (url.pathname.startsWith('/login') || url.pathname.startsWith('/auth')) {
+    // 既にログインしている場合はホームにリダイレクト
+    if (user && url.pathname.startsWith('/login')) {
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+    return response
+  }
+
+  // その他のパスで、ログインしていない場合はログインページにリダイレクト
+  if (!user) {
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
   
   return response
 }
