@@ -13,9 +13,11 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
+        // ここが重要：分割されたクッキーをまとめて取得する
         getAll() {
           return request.cookies.getAll()
         },
+        // ここが重要：分割して保存する
         setAll(cookiesToSet: any) {
           cookiesToSet.forEach(({ name, value, options }: any) => {
             request.cookies.set(name, value)
@@ -33,14 +35,14 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // ユーザー情報を取得（これによりセッションの有効期限更新などが走る）
+  // ユーザー情報を取得
   const { data: { user } } = await supabase.auth.getUser()
 
   const url = request.nextUrl.clone()
 
   // 1. ログインしていない場合
   if (!user) {
-    // ログインページや認証用API、静的ファイルへのアクセスは許可
+    // ログインページや認証用API、静的ファイルへのアクセスは許可（リダイレクトしない）
     if (
       !url.pathname.startsWith('/login') && 
       !url.pathname.startsWith('/auth') &&
