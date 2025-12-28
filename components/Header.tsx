@@ -30,8 +30,28 @@ export default function Header() {
   }, [supabase])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      // サーバーサイドのログアウトAPIを呼び出し
+      const response = await fetch('/auth/signout', {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        // リダイレクトはサーバー側で処理されるが、念のためクライアント側でも処理
+        router.push('/login')
+        router.refresh()
+      } else {
+        console.error('Logout failed:', response.statusText)
+        // フォールバック: クライアント側でログアウト
+        await supabase.auth.signOut()
+        router.push('/login')
+      }
+    } catch (error) {
+      console.error('Error during logout:', error)
+      // フォールバック: クライアント側でログアウト
+      await supabase.auth.signOut()
+      router.push('/login')
+    }
   }
 
   if (isLoading) {
