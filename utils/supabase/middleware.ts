@@ -28,7 +28,6 @@ export async function updateSession(request: NextRequest) {
   )
 
   // セッションを更新（重要: これにより認証状態が確実に反映される）
-  // refreshSessionを呼び出すことで、セッションを確実に更新
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -37,17 +36,22 @@ export async function updateSession(request: NextRequest) {
   const isLoginPage = pathname.startsWith('/login')
   const isAuthCallback = pathname.startsWith('/auth')
 
-  // ログインページや認証コールバック以外で未ログインの場合、ログインページにリダイレクト
-  if (!user && !isLoginPage && !isAuthCallback) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  // 免除条件: 認証関連のパス（/login や /auth）へのアクセス
+  if (isLoginPage || isAuthCallback) {
+    // ログイン済みで /login に来た場合のみホームへリダイレクト
+    if (user && isLoginPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+    // 未ログインで /login や /auth に来た場合は、そのまま処理を続行（リダイレクトしない）
+    return supabaseResponse
   }
 
-  // ログイン済みのユーザーがログインページにアクセスした場合、ホームにリダイレクト
-  if (user && isLoginPage) {
+  // それ以外の保護されたページで未ログインの場合、ログインページにリダイレクト
+  if (!user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
