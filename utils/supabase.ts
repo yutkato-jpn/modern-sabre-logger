@@ -418,3 +418,40 @@ export async function getRecentPointsWithMatches(limit: number = 100, client = s
   return pointsWithMatches
 }
 
+export async function deleteMatch(matchId: string, client = supabase): Promise<{ success: boolean; error: Error | null }> {
+  // Match IDの検証
+  if (!matchId || matchId.trim() === '') {
+    const error = new Error('Match ID is required')
+    console.error('Error deleting match:', error.message)
+    return { success: false, error }
+  }
+
+  // 試合を削除（RLSにより、自分の試合のみ削除可能）
+  const { error } = await client
+    .from('matches')
+    .delete()
+    .eq('id', matchId)
+
+  if (error) {
+    console.error('Error deleting match - Full error object:', error)
+    console.error('Error message:', error.message)
+    console.error('Error details:', error.details)
+    console.error('Error hint:', error.hint)
+    console.error('Error code:', error.code)
+    
+    const errorObj = new Error(
+      error.message || 'Failed to delete match from database'
+    )
+    if (error.details) {
+      errorObj.message += ` (Details: ${error.details})`
+    }
+    if (error.hint) {
+      errorObj.message += ` (Hint: ${error.hint})`
+    }
+    
+    return { success: false, error: errorObj }
+  }
+
+  return { success: true, error: null }
+}
+

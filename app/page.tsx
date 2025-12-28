@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, History } from 'lucide-react'
-import { getMatches, Match } from '@/utils/supabase'
+import { getMatches, deleteMatch, Match } from '@/utils/supabase'
 import MatchHistory from '@/components/MatchHistory'
 import AICoachReport from '@/components/AICoachReport'
 import Header from '@/components/Header'
@@ -34,6 +34,25 @@ export default function Home() {
 
     fetchMatches()
   }, [])
+
+  const handleDeleteMatch = async (matchId: string) => {
+    try {
+      const result = await deleteMatch(matchId)
+      
+      if (result.error) {
+        alert(`試合の削除に失敗しました: ${result.error.message}`)
+        return
+      }
+
+      if (result.success) {
+        // UIから即座に削除
+        setMatches(prevMatches => prevMatches.filter(m => m.id !== matchId))
+      }
+    } catch (error) {
+      console.error('Error deleting match:', error)
+      alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black">
@@ -66,7 +85,7 @@ export default function Home() {
           {isLoading ? (
             <p className="text-gray-400">読み込み中...</p>
           ) : (
-            <MatchHistory matches={matches} />
+            <MatchHistory matches={matches} onDelete={handleDeleteMatch} />
           )}
         </div>
         </div>
