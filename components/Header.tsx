@@ -3,14 +3,17 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/utils/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 import { LogOut, User } from 'lucide-react'
 
 export default function Header() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ), [])
 
   useEffect(() => {
     const getUser = async () => {
@@ -31,25 +34,18 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      // サーバーサイドのログアウトAPIを呼び出し（POSTリクエスト）
-      const response = await fetch('/auth/signout', {
+      // 1. クライアント側のセッション（LocalStorage）を破棄
+      await supabase.auth.signOut()
+
+      // 2. サーバー側のクッキーを削除するAPIを叩く
+      await fetch('/auth/signout', {
         method: 'POST',
-        credentials: 'include', // クッキーを含める
+        credentials: 'include',
       })
 
-      if (response.redirected) {
-        // サーバー側でリダイレクトされた場合
-        window.location.href = '/login'
-      } else if (response.ok) {
-        // リダイレクトされなかった場合、手動でリダイレクト
-        router.push('/login')
-        router.refresh()
-      } else {
-        console.error('Logout failed:', response.statusText)
-        // フォールバック: クライアント側でログアウト
-        await supabase.auth.signOut()
-        window.location.href = '/login'
-      }
+      // 3. 画面を更新してログイン画面へ
+      router.push('/login')
+      router.refresh()
     } catch (error) {
       console.error('Error during logout:', error)
       // フォールバック: クライアント側でログアウト
