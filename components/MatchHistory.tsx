@@ -37,9 +37,9 @@ export default function MatchHistory({ matches, onDelete }: MatchHistoryProps) {
   return (
     <div className="space-y-3">
       {matches.map((match) => (
-        <div key={match.id} className="relative bg-panel-bg rounded-lg p-4 border border-gray-800">
-          <Link href={`/match/${match.id}/edit`}>
-            <div className="hover:bg-opacity-80 transition-colors cursor-pointer">
+        <div key={match.id} className="bg-panel-bg rounded-lg p-4 border border-gray-800">
+          <div className="flex justify-between items-center">
+            <Link href={`/match/${match.id}/edit`} className="flex-1 hover:bg-opacity-80 transition-colors cursor-pointer">
               <div className="flex justify-between items-center">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -77,17 +77,17 @@ export default function MatchHistory({ matches, onDelete }: MatchHistoryProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          </Link>
-          {/* 削除ボタン */}
-          <button
-            onClick={(e) => handleDelete(e, match.id)}
-            disabled={deletingId === match.id}
-            className="absolute top-4 right-4 p-2 text-red-500 hover:text-red-600 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="削除"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+            </Link>
+            {/* 削除ボタン */}
+            <button
+              onClick={(e) => handleDelete(e, match.id)}
+              disabled={deletingId === match.id}
+              className="ml-6 p-2 text-red-500 hover:text-red-600 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              title="削除"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       ))}
     </div>
