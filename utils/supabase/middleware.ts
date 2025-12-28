@@ -36,7 +36,16 @@ export async function updateSession(request: NextRequest) {
   )
 
   // ユーザー情報を取得
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: getUserError } = await supabase.auth.getUser()
+
+  // デバッグログ
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Middleware] Path:', request.nextUrl.pathname)
+    console.log('[Middleware] User exists:', !!user)
+    if (getUserError) {
+      console.error('[Middleware] getUser error:', getUserError)
+    }
+  }
 
   const url = request.nextUrl.clone()
 
@@ -48,6 +57,9 @@ export async function updateSession(request: NextRequest) {
       !url.pathname.startsWith('/auth') &&
       !url.pathname.startsWith('/_next')
     ) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Middleware] Redirecting to /login (no user)')
+      }
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
@@ -57,6 +69,9 @@ export async function updateSession(request: NextRequest) {
   else {
     // ログインページに行こうとしたらトップページへ転送
     if (url.pathname.startsWith('/login')) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Middleware] Redirecting to / (user logged in)')
+      }
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
