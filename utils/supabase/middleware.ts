@@ -2,8 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
   })
 
   const supabase = createServerClient(
@@ -15,46 +17,48 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: any) {
-          cookiesToSet.forEach((cookie: any) => request.cookies.set(cookie.name, cookie.value))
-          supabaseResponse = NextResponse.next({
-            request,
+          cookiesToSet.forEach(({ name, value, options }: any) => {
+            request.cookies.set(name, value)
           })
-          cookiesToSet.forEach((cookie: any) =>
-            supabaseResponse.cookies.set(cookie.name, cookie.value, cookie.options)
-          )
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }: any) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
   )
 
-  // セッションを更新（重要: これにより認証状態が確実に反映される）
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // ユーザー情報を取得（これによりセッションの有効期限更新などが走る）
+  const { data: { user } } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
-  const isLoginPage = pathname.startsWith('/login')
-  const isAuthCallback = pathname.startsWith('/auth')
+  const url = request.nextUrl.clone()
 
-  // 免除条件: 認証関連のパス（/login や /auth）へのアクセス
-  if (isLoginPage || isAuthCallback) {
-    // ログイン済みで /login に来た場合のみホームへリダイレクト
-    if (user && isLoginPage) {
-      const url = request.nextUrl.clone()
+  // 1. ログインしていない場合
+  if (!user) {
+    // ログインページや認証用API、静的ファイルへのアクセスは許可
+    if (
+      !url.pathname.startsWith('/login') && 
+      !url.pathname.startsWith('/auth') &&
+      !url.pathname.startsWith('/_next')
+    ) {
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  } 
+  
+  // 2. ログイン済みの場合
+  else {
+    // ログインページに行こうとしたらトップページへ転送
+    if (url.pathname.startsWith('/login')) {
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
-    // 未ログインで /login や /auth に来た場合は、そのまま処理を続行（リダイレクトしない）
-    return supabaseResponse
   }
 
-  // それ以外の保護されたページで未ログインの場合、ログインページにリダイレクト
-  if (!user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
+  return response
 }
-
