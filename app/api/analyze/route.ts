@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     // デバッグ: 環境変数の存在確認（値は出力しない）
     const hasApiKey = !!process.env.OPENAI_API_KEY

@@ -44,7 +44,12 @@ export default function AICoachReport({ matches }: AICoachReportProps) {
     setError(null)
 
     try {
-      const response = await fetch('/api/analyze')
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       
       // Content-Typeをチェック
       const contentType = response.headers.get('content-type')
