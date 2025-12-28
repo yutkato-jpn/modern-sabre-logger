@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   const cookieStore = cookies()
 
+  // 1. 通常のSupabaseクライアント作成とサインアウト試行
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,19 +22,30 @@ export async function POST(req: NextRequest) {
               cookieStore.set(name, value, options)
             })
           } catch (error) {
-            // Server Componentからの呼び出しエラーは無視
+            // ignore
           }
         },
       },
     }
   )
 
-  // サーバー側でセッションを破棄（これによりsetAllでクッキー削除が走る）
+  // サーバー側のセッション削除を試みる
   await supabase.auth.signOut()
 
-  // ログアウト後はログインページへリダイレクト
+  // 2. 【重要】強制クリーンアップ
+  // Supabaseのクッキー（sb-から始まるもの）を明示的に全て削除する
+  // これにより分割クッキー(chunked cookies)の残留を防ぐ
+  const allCookies = cookieStore.getAll()
+  allCookies.forEach((cookie) => {
+    // プロジェクト固有のプレフィックス、または一般的なSupabaseクッキーを判定
+    if (cookie.name.startsWith('sb-') || cookie.name.includes('auth-token')) {
+      cookieStore.delete(cookie.name)
+    }
+  })
+
+  // 3. ログアウト後はログインページへリダイレクト
+  // キャッシュを防ぐために302ステータスを使用
   return NextResponse.redirect(new URL('/login', req.url), {
     status: 302,
   })
 }
-
