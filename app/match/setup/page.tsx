@@ -22,11 +22,23 @@ export default function MatchSetupPage() {
 
     setIsLoading(true)
     try {
-      const result = await createMatch(opponentName, myColor)
-      
-      if (result.error) {
-        const errorMsg = `試合の作成に失敗しました: ${result.error.message}`
-        console.error('Error creating match:', result.error)
+      // サーバーサイドのAPIルートを使用
+      const response = await fetch('/api/matches/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          opponentName,
+          myColor,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        const errorMsg = `試合の作成に失敗しました: ${result.error || 'Unknown error'}`
+        console.error('Error creating match:', result)
         alert(errorMsg)
         setIsLoading(false)
         return
@@ -37,7 +49,7 @@ export default function MatchSetupPage() {
         router.push(`/match/${result.data.id}`)
       } else {
         const errorMsg = '試合の作成に失敗しました。データが返されませんでした。'
-        console.error('No data returned from createMatch')
+        console.error('No data returned from API')
         alert(errorMsg)
         setIsLoading(false)
       }
