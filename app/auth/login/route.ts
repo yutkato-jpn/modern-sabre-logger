@@ -7,7 +7,16 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const cookieStore = cookies()
-  let redirectResponse: NextResponse | null = null
+  const { searchParams, origin } = new URL(request.url)
+  const provider = searchParams.get('provider') as 'google' | null
+
+  if (!provider) {
+    return NextResponse.redirect(new URL('/login?error=no_provider', request.url))
+  }
+
+  // 一時的なResponseオブジェクトを作成（signInWithOAuth内でsetAllが呼ばれる前に必要）
+  // 実際のリダイレクトURLは後で設定するため、一時的に'/'を使用
+  let tempResponse = NextResponse.redirect(new URL('/', request.url))
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
   const supabase = createServerClient(
@@ -22,10 +31,8 @@ export async function GET(request: NextRequest) {
           try {
             cookiesToSetArray.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options)
-              // リダイレクトResponseが既に作成されている場合は、そこにCookieを設定
-              if (redirectResponse) {
-                redirectResponse.cookies.set(name, value, options)
-              }
+              // 一時的なResponseオブジェクトにCookieを設定
+              tempResponse.cookies.set(name, value, options)
             })
           } catch (error) {
             // Server Action/Route Handler context
@@ -35,14 +42,8 @@ export async function GET(request: NextRequest) {
     }
   )
 
-  const { searchParams, origin } = new URL(request.url)
-  const provider = searchParams.get('provider') as 'google' | null
-
-  if (!provider) {
-    return NextResponse.redirect(new URL('/login?error=no_provider', request.url))
-  }
-
   // 2. Google認証の開始URLを発行
+  // この時、setAllが呼ばれ、tempResponseにCookieが設定される
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -61,14 +62,22 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Googleの認証画面へリダイレクト
-  // 先にResponseオブジェクトを作成して、setAll内でCookieを設定できるようにする
-  redirectResponse = NextResponse.redirect(data.url)
+  // 実際のリダイレクトURLで新しいResponseを作成し、tempResponseからすべてのCookieをコピー
+  const redirectResponse = NextResponse.redirect(data.url)
   
-  // setAllが呼ばれた後にCookieが設定されるため、再度Cookieを設定
-  // これは、signInWithOAuth内でsetAllが呼ばれる前にResponseを作成する必要があるため
-  const allCookies = cookieStore.getAll()
-  allCookies.forEach((cookie) => {
-    redirectResponse!.cookies.set(cookie.name, cookie.value)
+  // tempResponseからすべてのCookieをコピー
+  tempResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    })
+  })
+  
+  // cookieStoreからもすべてのCookieを取得して設定（念のため）
+  cookieStore.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value)
   })
   
   return redirectResponse
