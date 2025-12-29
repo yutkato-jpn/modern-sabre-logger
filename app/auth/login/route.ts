@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const cookieStore = cookies()
-  const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
+  let redirectResponse: NextResponse | null = null
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
   const supabase = createServerClient(
@@ -22,8 +22,10 @@ export async function GET(request: NextRequest) {
           try {
             cookiesToSetArray.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options)
-              // Cookieを配列に保存（後でResponseに設定）
-              cookiesToSet.push({ name, value, options })
+              // リダイレクトResponseが既に作成されている場合は、そこにCookieを設定
+              if (redirectResponse) {
+                redirectResponse.cookies.set(name, value, options)
+              }
             })
           } catch (error) {
             // Server Action/Route Handler context
@@ -59,14 +61,16 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Googleの認証画面へリダイレクト
-  // Cookieが確実に設定されるように、NextResponse.redirectを使用
-  const response = NextResponse.redirect(data.url)
+  // 先にResponseオブジェクトを作成して、setAll内でCookieを設定できるようにする
+  redirectResponse = NextResponse.redirect(data.url)
   
-  // 保存されたCookieをResponseに設定
-  cookiesToSet.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options)
+  // setAllが呼ばれた後にCookieが設定されるため、再度Cookieを設定
+  // これは、signInWithOAuth内でsetAllが呼ばれる前にResponseを作成する必要があるため
+  const allCookies = cookieStore.getAll()
+  allCookies.forEach((cookie) => {
+    redirectResponse!.cookies.set(cookie.name, cookie.value)
   })
   
-  return response
+  return redirectResponse
 }
 

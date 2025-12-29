@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const cookieStore = cookies()
-    const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
+    let htmlResponse: NextResponse | null = null
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,8 +26,10 @@ export async function GET(request: NextRequest) {
             try {
               cookiesToSetArray.forEach(({ name, value, options }: any) => {
                 cookieStore.set(name, value, options)
-                // Cookieを配列に保存（後でResponseに設定）
-                cookiesToSet.push({ name, value, options })
+                // HTML Responseが既に作成されている場合は、そこにCookieを設定
+                if (htmlResponse) {
+                  htmlResponse.cookies.set(name, value, options)
+                }
               })
             } catch {
               // ignore
@@ -64,18 +66,19 @@ export async function GET(request: NextRequest) {
           </body>
         </html>
       `
-      const response = new NextResponse(html, {
+      htmlResponse = new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html',
         },
       })
       
-      // 保存されたCookieをResponseに設定
-      cookiesToSet.forEach(({ name, value, options }) => {
-        response.cookies.set(name, value, options)
+      // exchangeCodeForSession内でsetAllが呼ばれた後にCookieが設定されるため、再度Cookieを設定
+      const allCookies = cookieStore.getAll()
+      allCookies.forEach((cookie) => {
+        htmlResponse!.cookies.set(cookie.name, cookie.value)
       })
       
-      return response
+      return htmlResponse
     } else {
       // エラー時
       return NextResponse.json({ error: error.message }, { status: 400 })
