@@ -71,9 +71,17 @@ export default function AICoachReport({ matches }: AICoachReportProps) {
 
       const data: AnalysisResult = await response.json()
       
+      console.log('[AICoach] Received data:', {
+        hasSummary: !!data.summary,
+        hasDetail: !!data.detail,
+        hasActionPlan: !!data.action_plan,
+        allKeys: Object.keys(data)
+      })
+      
       // データの検証
       if (!data.summary || !data.detail || !data.action_plan) {
-        throw new Error('AIからのレスポンスが不完全です')
+        console.error('[AICoach] Incomplete response:', data)
+        throw new Error('AIからのレスポンスが不完全です。必要なフィールドが含まれていません。')
       }
       
       setAnalysis(data)
