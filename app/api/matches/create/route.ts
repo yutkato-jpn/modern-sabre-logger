@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // デバッグ: ユーザー情報とテーブル構造を確認
+    console.log('[API] User ID:', user.id)
+    console.log('[API] Opponent name:', opponentName.trim())
+    console.log('[API] My color:', myColor)
+
     // 試合を作成
     const { data, error } = await supabase
       .from('matches')
@@ -47,9 +52,19 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating match:', error)
+      console.error('[API] Error creating match - Full error:', error)
+      console.error('[API] Error code:', error.code)
+      console.error('[API] Error message:', error.message)
+      console.error('[API] Error details:', error.details)
+      console.error('[API] Error hint:', error.hint)
+      
       return NextResponse.json(
-        { error: error.message || '試合の作成に失敗しました' },
+        { 
+          error: error.message || '試合の作成に失敗しました',
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        },
         { status: 500 }
       )
     }
