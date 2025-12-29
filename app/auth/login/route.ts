@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=no_provider', request.url))
   }
 
-  // Cookieを保存するための配列
-  const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
+  // 一時的なリダイレクトURLでResponseオブジェクトを作成
+  // signInWithOAuth内でsetAllが呼ばれる前に必要
+  let redirectResponse: NextResponse | null = null
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
   const supabase = createServerClient(
@@ -28,11 +29,18 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSetArray: any) {
           try {
+            console.log(`[Auth Login] setAll called with ${cookiesToSetArray.length} cookies`)
             cookiesToSetArray.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options)
-              // Cookieを配列に保存（後でResponseに設定）
-              cookiesToSet.push({ name, value, options })
-              console.log(`[Auth Login] Cookie saved to array: ${name}`)
+              console.log(`[Auth Login] Cookie set in store: ${name} (value length: ${value?.length || 0})`)
+              
+              // redirectResponseが既に作成されている場合は、そこにCookieを設定
+              if (redirectResponse) {
+                redirectResponse.cookies.set(name, value, options)
+                console.log(`[Auth Login] Cookie set in response: ${name}`)
+              } else {
+                console.warn(`[Auth Login] redirectResponse not created yet for cookie: ${name}`)
+              }
             })
           } catch (error) {
             console.error('[Auth Login] Error in setAll:', error)
@@ -43,7 +51,8 @@ export async function GET(request: NextRequest) {
   )
 
   // 2. Google認証の開始URLを発行
-  // この時、setAllが呼ばれ、tempResponseにCookieが設定される
+  // この時、setAllが呼ばれる可能性があるため、先にResponseオブジェクトを作成
+  // ただし、実際のURLは後で設定する必要があるため、一時的に'/'を使用
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -58,40 +67,34 @@ export async function GET(request: NextRequest) {
   })
 
   if (error) {
+    console.error('[Auth Login] OAuth error:', error)
     return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url))
   }
 
-  // 3. Googleの認証画面へリダイレクト
-  // 実際のリダイレクトURLで新しいResponseを作成し、保存されたCookieを設定
-  const redirectResponse = NextResponse.redirect(data.url)
+  // 3. 実際のリダイレクトURLでResponseオブジェクトを作成
+  // この時点で、setAllが既に呼ばれている可能性があるため、
+  // cookieStoreからすべてのCookieを取得して設定
+  redirectResponse = NextResponse.redirect(data.url)
   
   // デバッグ: Cookieの確認
-  console.log('[Auth Login] Cookies to set:', cookiesToSet.map(c => c.name))
-  console.log('[Auth Login] Cookie store cookies:', cookieStore.getAll().map(c => c.name))
+  const storeCookies = cookieStore.getAll()
+  console.log('[Auth Login] Cookie store cookies after signInWithOAuth:', storeCookies.map(c => c.name))
   
-  // 保存されたCookieをResponseに設定
-  cookiesToSet.forEach(({ name, value, options }) => {
-    console.log(`[Auth Login] Setting cookie: ${name}`)
-    redirectResponse.cookies.set(name, value, {
-      ...options,
-      httpOnly: options?.httpOnly ?? true,
-      secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
-      sameSite: options?.sameSite ?? ('lax' as const),
-      path: options?.path ?? '/',
+  // cookieStoreからすべてのCookieを取得して設定
+  storeCookies.forEach((cookie) => {
+    console.log(`[Auth Login] Setting cookie from store: ${cookie.name}`)
+    redirectResponse!.cookies.set(cookie.name, cookie.value, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
     })
-  })
-  
-  // cookieStoreからもすべてのCookieを取得して設定（念のため）
-  cookieStore.getAll().forEach((cookie) => {
-    if (!redirectResponse.cookies.has(cookie.name)) {
-      console.log(`[Auth Login] Setting cookie from store: ${cookie.name}`)
-      redirectResponse.cookies.set(cookie.name, cookie.value)
-    }
   })
   
   // デバッグ: 最終的なCookieの確認
   const finalCookies = redirectResponse.cookies.getAll()
   console.log('[Auth Login] Final response cookies:', finalCookies.map(c => c.name))
+  console.log('[Auth Login] Redirecting to:', data.url)
   
   return redirectResponse
 }
