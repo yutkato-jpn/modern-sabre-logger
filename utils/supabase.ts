@@ -11,6 +11,7 @@ export interface Match {
   my_color: 'red' | 'green'
   final_score_me: number
   final_score_opponent: number
+  match_date?: string
   created_at?: string
 }
 

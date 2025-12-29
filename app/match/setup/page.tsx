@@ -11,6 +11,17 @@ export default function MatchSetupPage() {
   const router = useRouter()
   const [opponentName, setOpponentName] = useState('')
   const [myColor, setMyColor] = useState<'red' | 'green'>('red')
+  const [matchDate, setMatchDate] = useState(() => {
+    // デフォルトは現在の日時（ローカルタイムゾーン）
+    const now = new Date()
+    // YYYY-MM-DDTHH:mm形式に変換
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  })
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +42,7 @@ export default function MatchSetupPage() {
         body: JSON.stringify({
           opponentName,
           myColor,
+          matchDate,
         }),
       })
 
@@ -88,6 +100,23 @@ export default function MatchSetupPage() {
                 placeholder="相手の名前を入力"
                 required
               />
+            </div>
+
+            <div>
+              <label htmlFor="matchDate" className="block text-lg mb-2">
+                試合日時
+              </label>
+              <input
+                id="matchDate"
+                type="datetime-local"
+                value={matchDate}
+                onChange={(e) => setMatchDate(e.target.value)}
+                className="w-full bg-panel-bg border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-neon-blue"
+                required
+              />
+              <p className="text-sm text-gray-400 mt-1">
+                試合が行われた日時を選択してください
+              </p>
             </div>
 
             <div>

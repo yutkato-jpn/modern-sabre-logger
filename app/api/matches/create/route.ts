@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { opponentName, myColor } = body
+    const { opponentName, myColor, matchDate } = body
 
     if (!opponentName || opponentName.trim() === '') {
       return NextResponse.json(
@@ -33,21 +33,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 日時の処理（matchDateが指定されていない場合は現在の日時を使用）
+    let matchDateValue: string | null = null
+    if (matchDate) {
+      // datetime-local形式（YYYY-MM-DDTHH:mm）をISO 8601形式に変換
+      const date = new Date(matchDate)
+      if (!isNaN(date.getTime())) {
+        matchDateValue = date.toISOString()
+      }
+    }
+    // matchDateが指定されていない、または無効な場合は現在の日時を使用
+    if (!matchDateValue) {
+      matchDateValue = new Date().toISOString()
+    }
+
     // デバッグ: ユーザー情報とテーブル構造を確認
     console.log('[API] User ID:', user.id)
     console.log('[API] Opponent name:', opponentName.trim())
     console.log('[API] My color:', myColor)
+    console.log('[API] Match date:', matchDateValue)
 
     // 試合を作成
+    const insertData: any = {
+      user_id: user.id,
+      opponent_name: opponentName.trim(),
+      my_color: myColor,
+      final_score_me: 0,
+      final_score_opponent: 0,
+    }
+
+    // match_dateカラムが存在する場合のみ追加
+    // データベースにカラムが存在しない場合はエラーになるので、エラーハンドリングで対応
+    insertData.match_date = matchDateValue
+
     const { data, error } = await supabase
       .from('matches')
-      .insert({
-        user_id: user.id,
-        opponent_name: opponentName.trim(),
-        my_color: myColor,
-        final_score_me: 0,
-        final_score_opponent: 0,
-      })
+      .insert(insertData)
       .select()
       .single()
 
