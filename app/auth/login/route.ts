@@ -14,9 +14,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=no_provider', request.url))
   }
 
-  // 一時的なResponseオブジェクトを作成（signInWithOAuth内でsetAllが呼ばれる前に必要）
-  // 実際のリダイレクトURLは後で設定するため、一時的に'/'を使用
-  let tempResponse = NextResponse.redirect(new URL('/', request.url))
+  // Cookieを保存するための配列
+  const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
   const supabase = createServerClient(
@@ -31,11 +30,12 @@ export async function GET(request: NextRequest) {
           try {
             cookiesToSetArray.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options)
-              // 一時的なResponseオブジェクトにCookieを設定
-              tempResponse.cookies.set(name, value, options)
+              // Cookieを配列に保存（後でResponseに設定）
+              cookiesToSet.push({ name, value, options })
+              console.log(`[Auth Login] Cookie saved to array: ${name}`)
             })
           } catch (error) {
-            // Server Action/Route Handler context
+            console.error('[Auth Login] Error in setAll:', error)
           }
         },
       },
@@ -62,23 +62,36 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Googleの認証画面へリダイレクト
-  // 実際のリダイレクトURLで新しいResponseを作成し、tempResponseからすべてのCookieをコピー
+  // 実際のリダイレクトURLで新しいResponseを作成し、保存されたCookieを設定
   const redirectResponse = NextResponse.redirect(data.url)
   
-  // tempResponseからすべてのCookieをコピー
-  tempResponse.cookies.getAll().forEach((cookie) => {
-    redirectResponse.cookies.set(cookie.name, cookie.value, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
+  // デバッグ: Cookieの確認
+  console.log('[Auth Login] Cookies to set:', cookiesToSet.map(c => c.name))
+  console.log('[Auth Login] Cookie store cookies:', cookieStore.getAll().map(c => c.name))
+  
+  // 保存されたCookieをResponseに設定
+  cookiesToSet.forEach(({ name, value, options }) => {
+    console.log(`[Auth Login] Setting cookie: ${name}`)
+    redirectResponse.cookies.set(name, value, {
+      ...options,
+      httpOnly: options?.httpOnly ?? true,
+      secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
+      sameSite: options?.sameSite ?? ('lax' as const),
+      path: options?.path ?? '/',
     })
   })
   
   // cookieStoreからもすべてのCookieを取得して設定（念のため）
   cookieStore.getAll().forEach((cookie) => {
-    redirectResponse.cookies.set(cookie.name, cookie.value)
+    if (!redirectResponse.cookies.has(cookie.name)) {
+      console.log(`[Auth Login] Setting cookie from store: ${cookie.name}`)
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    }
   })
+  
+  // デバッグ: 最終的なCookieの確認
+  const finalCookies = redirectResponse.cookies.getAll()
+  console.log('[Auth Login] Final response cookies:', finalCookies.map(c => c.name))
   
   return redirectResponse
 }

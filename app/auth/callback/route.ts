@@ -13,34 +13,8 @@ export async function GET(request: NextRequest) {
   if (code) {
     const cookieStore = cookies()
     
-    // 一時的なResponseオブジェクトを作成（exchangeCodeForSession内でsetAllが呼ばれる前に必要）
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Login Success</title>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f9ff; }
-            .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-            a { display: inline-block; margin-top: 1rem; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <h1>✅ 認証成功</h1>
-            <p>セッションを確立しました。</p>
-            <p>以下のボタンを押してアプリへ進んでください。</p>
-            <a href="${origin}${next}">アプリを開始する</a>
-          </div>
-        </body>
-      </html>
-    `
-    let tempResponse = new NextResponse(html, {
-      headers: {
-        'Content-Type': 'text/html',
-      },
-    })
+    // Cookieを保存するための配列
+    const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,46 +28,91 @@ export async function GET(request: NextRequest) {
             try {
               cookiesToSetArray.forEach(({ name, value, options }: any) => {
                 cookieStore.set(name, value, options)
-                // 一時的なResponseオブジェクトにCookieを設定
-                tempResponse.cookies.set(name, value, options)
+                // Cookieを配列に保存（後でResponseに設定）
+                cookiesToSet.push({ name, value, options })
+                console.log(`[Auth Callback] Cookie saved to array: ${name}`)
               })
-            } catch {
-              // ignore
+            } catch (error) {
+              console.error('[Auth Callback] Error in setAll:', error)
             }
           },
         },
       }
     )
     
+    // デバッグ: リクエスト時のCookieを確認
+    const requestCookies = cookieStore.getAll()
+    console.log('[Auth Callback] Request cookies:', requestCookies.map(c => c.name))
+    const codeVerifierCookies = requestCookies.filter(c => c.name.includes('code-verifier') || c.name.includes('verifier'))
+    console.log('[Auth Callback] Code verifier cookies:', codeVerifierCookies.map(c => ({ name: c.name, hasValue: !!c.value })))
+    
     // exchangeCodeForSessionを呼ぶ（この時、setAllが呼ばれ、tempResponseにCookieが設定される）
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
-      // tempResponseからすべてのCookieをコピーして最終的なResponseを作成
+      // HTMLレスポンスを作成
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Login Success</title>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f9ff; }
+              .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+              a { display: inline-block; margin-top: 1rem; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h1>✅ 認証成功</h1>
+              <p>セッションを確立しました。</p>
+              <p>以下のボタンを押してアプリへ進んでください。</p>
+              <a href="${origin}${next}">アプリを開始する</a>
+            </div>
+          </body>
+        </html>
+      `
+      
       const finalResponse = new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html',
         },
       })
       
-      // tempResponseからすべてのCookieをコピー
-      tempResponse.cookies.getAll().forEach((cookie) => {
-        finalResponse.cookies.set(cookie.name, cookie.value, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax' as const,
-          path: '/',
+      // デバッグ: Cookieの確認
+      console.log('[Auth Callback] Cookies to set:', cookiesToSet.map(c => c.name))
+      console.log('[Auth Callback] Cookie store cookies after exchange:', cookieStore.getAll().map(c => c.name))
+      
+      // 保存されたCookieをResponseに設定
+      cookiesToSet.forEach(({ name, value, options }) => {
+        console.log(`[Auth Callback] Setting cookie: ${name}`)
+        finalResponse.cookies.set(name, value, {
+          ...options,
+          httpOnly: options?.httpOnly ?? true,
+          secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
+          sameSite: options?.sameSite ?? ('lax' as const),
+          path: options?.path ?? '/',
         })
       })
       
       // cookieStoreからもすべてのCookieを取得して設定（念のため）
       cookieStore.getAll().forEach((cookie) => {
-        finalResponse.cookies.set(cookie.name, cookie.value)
+        if (!finalResponse.cookies.has(cookie.name)) {
+          console.log(`[Auth Callback] Setting cookie from store: ${cookie.name}`)
+          finalResponse.cookies.set(cookie.name, cookie.value)
+        }
       })
+      
+      // デバッグ: 最終的なCookieの確認
+      const finalCookies = finalResponse.cookies.getAll()
+      console.log('[Auth Callback] Final response cookies:', finalCookies.map(c => c.name))
       
       return finalResponse
     } else {
       // エラー時
+      console.error('[Auth Callback] Exchange error:', error.message)
+      console.error('[Auth Callback] Error details:', error)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
   }
