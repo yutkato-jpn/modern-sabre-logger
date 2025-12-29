@@ -14,10 +14,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=no_provider', request.url))
   }
 
-  // 重要な修正: signInWithOAuthを呼ぶ前に、一時的なResponseオブジェクトを作成
-  // これにより、setAllが呼ばれた時にCookieを設定できる
-  // 実際のリダイレクトURLは後で設定するため、一時的に'/'を使用
-  let tempResponse = NextResponse.redirect(new URL('/', request.url))
+  // Cookieを保存するための配列（setAllが呼ばれる前に作成）
+  const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
   const supabase = createServerClient(
@@ -26,19 +24,21 @@ export async function GET(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          const allCookies = cookieStore.getAll()
+          console.log(`[Auth Login] getAll() called, returning ${allCookies.length} cookies`)
+          return allCookies
         },
         setAll(cookiesToSetArray: any) {
           try {
             console.log(`[Auth Login] setAll called with ${cookiesToSetArray.length} cookies`)
             cookiesToSetArray.forEach(({ name, value, options }: any) => {
+              console.log(`[Auth Login] Processing cookie: ${name} (value length: ${value?.length || 0})`)
               cookieStore.set(name, value, options)
-              console.log(`[Auth Login] Cookie set in store: ${name} (value length: ${value?.length || 0})`)
-              
-              // 一時的なResponseオブジェクトにCookieを設定
-              tempResponse.cookies.set(name, value, options)
-              console.log(`[Auth Login] Cookie set in tempResponse: ${name}`)
+              // Cookieを配列に保存（後でResponseに設定）
+              cookiesToSet.push({ name, value, options })
+              console.log(`[Auth Login] Cookie saved to array: ${name}`)
             })
+            console.log(`[Auth Login] Total cookies in array: ${cookiesToSet.length}`)
           } catch (error) {
             console.error('[Auth Login] Error in setAll:', error)
           }
@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
   )
 
   // 2. Google認証の開始URLを発行
-  // この時、setAllが呼ばれ、tempResponseにCookieが設定される
+  // この時、setAllが呼ばれ、cookiesToSet配列にCookieが保存される
+  console.log('[Auth Login] Calling signInWithOAuth...')
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -67,24 +68,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url))
   }
 
+  console.log('[Auth Login] signInWithOAuth completed, cookiesToSet length:', cookiesToSet.length)
+
   // 3. 実際のリダイレクトURLでResponseオブジェクトを作成
-  // tempResponseからすべてのCookieをコピー
   const redirectResponse = NextResponse.redirect(data.url)
   
   // デバッグ: Cookieの確認
-  const tempCookies = tempResponse.cookies.getAll()
   const storeCookies = cookieStore.getAll()
-  console.log('[Auth Login] Temp response cookies:', tempCookies.map(c => c.name))
+  console.log('[Auth Login] Cookies to set from array:', cookiesToSet.map(c => c.name))
   console.log('[Auth Login] Cookie store cookies after signInWithOAuth:', storeCookies.map(c => c.name))
   
-  // tempResponseからすべてのCookieをコピー
-  tempCookies.forEach((cookie) => {
-    console.log(`[Auth Login] Copying cookie from tempResponse: ${cookie.name}`)
-    redirectResponse.cookies.set(cookie.name, cookie.value, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
+  // 保存されたCookieをResponseに設定
+  cookiesToSet.forEach(({ name, value, options }) => {
+    console.log(`[Auth Login] Setting cookie from array: ${name}`)
+    redirectResponse.cookies.set(name, value, {
+      ...options,
+      httpOnly: options?.httpOnly ?? true,
+      secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
+      sameSite: options?.sameSite ?? ('lax' as const),
+      path: options?.path ?? '/',
     })
   })
   
