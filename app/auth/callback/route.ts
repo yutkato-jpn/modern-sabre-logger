@@ -6,18 +6,14 @@ import { type NextRequest } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
 
   if (code) {
     const cookieStore = cookies()
+    const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
+    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,12 +22,12 @@ export async function GET(request: NextRequest) {
           getAll() {
             return cookieStore.getAll()
           },
-          setAll(cookiesToSet: any) {
+          setAll(cookiesToSetArray: any) {
             try {
-              cookiesToSet.forEach(({ name, value, options }: any) => {
+              cookiesToSetArray.forEach(({ name, value, options }: any) => {
                 cookieStore.set(name, value, options)
-                // ResponseにもCookieを設定
-                response.cookies.set(name, value, options)
+                // Cookieを配列に保存（後でResponseに設定）
+                cookiesToSet.push({ name, value, options })
               })
             } catch {
               // ignore
@@ -68,12 +64,18 @@ export async function GET(request: NextRequest) {
           </body>
         </html>
       `
-      return new NextResponse(html, {
+      const response = new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html',
-          ...Object.fromEntries(response.headers.entries()),
         },
       })
+      
+      // 保存されたCookieをResponseに設定
+      cookiesToSet.forEach(({ name, value, options }) => {
+        response.cookies.set(name, value, options)
+      })
+      
+      return response
     } else {
       // エラー時
       return NextResponse.json({ error: error.message }, { status: 400 })

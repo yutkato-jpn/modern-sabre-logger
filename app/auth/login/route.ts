@@ -6,13 +6,8 @@ import { type NextRequest } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
   const cookieStore = cookies()
+  const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
   
   // 1. サーバーサイドクライアントの作成（Cookie操作機能付き）
   const supabase = createServerClient(
@@ -23,12 +18,12 @@ export async function GET(request: NextRequest) {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet: any) {
+        setAll(cookiesToSetArray: any) {
           try {
-            cookiesToSet.forEach(({ name, value, options }: any) => {
+            cookiesToSetArray.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options)
-              // ResponseにもCookieを設定
-              response.cookies.set(name, value, options)
+              // Cookieを配列に保存（後でResponseに設定）
+              cookiesToSet.push({ name, value, options })
             })
           } catch (error) {
             // Server Action/Route Handler context
@@ -64,10 +59,14 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Googleの認証画面へリダイレクト
-  // この時点で supabase が自動的に Verifier を Cookie に保存してくれる
   // Cookieが確実に設定されるように、NextResponse.redirectを使用
-  return NextResponse.redirect(data.url, {
-    headers: response.headers,
+  const response = NextResponse.redirect(data.url)
+  
+  // 保存されたCookieをResponseに設定
+  cookiesToSet.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options)
   })
+  
+  return response
 }
 
