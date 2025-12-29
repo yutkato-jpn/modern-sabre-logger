@@ -16,14 +16,32 @@ export default function Home() {
     const fetchMatches = async () => {
       try {
         setIsLoading(true)
-        console.log('Fetching matches from Supabase...')
-        const data = await getMatches()
+        console.log('Fetching matches from API...')
+        
+        // サーバー側のAPIルートを使用
+        const response = await fetch('/api/matches', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: '試合データの取得に失敗しました' }))
+          console.error('Error fetching matches:', errorData)
+          setMatches([])
+          return
+        }
+
+        const result = await response.json()
+        const data = result.data || []
+        
         console.log('Fetched matches:', data)
         console.log('Number of matches:', data.length)
         if (data.length > 0) {
           console.log('First match:', data[0])
         }
-        setMatches(data || [])
+        setMatches(data)
       } catch (error) {
         console.error('Error fetching matches:', error)
         setMatches([])

@@ -24,13 +24,36 @@ export default function EditMatchPage({ params }: EditMatchPageProps) {
   const [editingPoint, setEditingPoint] = useState<Point | null>(null)
 
   const loadData = useCallback(async () => {
-    const matchData = await getMatch(params.id)
-    if (matchData) {
-      setMatch(matchData)
+    try {
+      // サーバー側のAPIルートを使用
+      const [matchResponse, pointsResponse] = await Promise.all([
+        fetch(`/api/matches/${params.id}`),
+        fetch(`/api/matches/${params.id}/points`),
+      ])
+
+      if (!matchResponse.ok) {
+        const errorData = await matchResponse.json().catch(() => ({ error: '試合が見つかりません' }))
+        console.error('Error fetching match:', errorData)
+        router.push('/')
+        return
+      }
+
+      const matchResult = await matchResponse.json()
+      const matchData = matchResult.data
+
+      if (matchData) {
+        setMatch(matchData)
+      }
+
+      if (pointsResponse.ok) {
+        const pointsResult = await pointsResponse.json()
+        setPoints(pointsResult.data || [])
+      }
+    } catch (error) {
+      console.error('Error loading data:', error)
+      router.push('/')
     }
-    const pointsData = await getPoints(params.id)
-    setPoints(pointsData)
-  }, [params.id])
+  }, [params.id, router])
 
   useEffect(() => {
     loadData()

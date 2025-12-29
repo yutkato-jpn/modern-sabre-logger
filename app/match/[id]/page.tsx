@@ -66,19 +66,43 @@ export default function MatchPage({ params }: MatchPageProps) {
   }, [isRunning, time])
 
   const loadMatch = useCallback(async () => {
-    const matchData = await getMatch(params.id)
-    if (matchData) {
-      setMatch(matchData)
-      const pointsData = await getPoints(params.id)
-      setPoints(pointsData)
-      
-      // スコアを計算
-      const meScore = pointsData.filter(p => p.scorer === 'me').length
-      const opponentScore = pointsData.filter(p => p.scorer === 'opponent').length
-      setScoreMe(meScore)
-      setScoreOpponent(opponentScore)
+    try {
+      // サーバー側のAPIルートを使用
+      const [matchResponse, pointsResponse] = await Promise.all([
+        fetch(`/api/matches/${params.id}`),
+        fetch(`/api/matches/${params.id}/points`),
+      ])
+
+      if (!matchResponse.ok) {
+        const errorData = await matchResponse.json().catch(() => ({ error: '試合が見つかりません' }))
+        console.error('Error fetching match:', errorData)
+        router.push('/')
+        return
+      }
+
+      const matchResult = await matchResponse.json()
+      const matchData = matchResult.data
+
+      if (matchData) {
+        setMatch(matchData)
+
+        if (pointsResponse.ok) {
+          const pointsResult = await pointsResponse.json()
+          const pointsData = pointsResult.data || []
+          setPoints(pointsData)
+          
+          // スコアを計算
+          const meScore = pointsData.filter(p => p.scorer === 'me').length
+          const opponentScore = pointsData.filter(p => p.scorer === 'opponent').length
+          setScoreMe(meScore)
+          setScoreOpponent(opponentScore)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading match:', error)
+      router.push('/')
     }
-  }, [params.id])
+  }, [params.id, router])
 
   useEffect(() => {
     loadMatch()
