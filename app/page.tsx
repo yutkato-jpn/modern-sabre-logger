@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, History } from 'lucide-react'
-import { getMatches, deleteMatch, Match } from '@/utils/supabase'
+import { Match } from '@/utils/supabase'
 import MatchHistory from '@/components/MatchHistory'
 import AICoachReport from '@/components/AICoachReport'
 import Header from '@/components/Header'
@@ -55,17 +55,20 @@ export default function Home() {
 
   const handleDeleteMatch = async (matchId: string) => {
     try {
-      const result = await deleteMatch(matchId)
-      
-      if (result.error) {
-        alert(`試合の削除に失敗しました: ${result.error.message}`)
+      // サーバー側のAPIルートを使用
+      const response = await fetch(`/api/matches/${matchId}/delete`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        alert(`試合の削除に失敗しました: ${result.error || 'Unknown error'}`)
         return
       }
 
-      if (result.success) {
-        // UIから即座に削除
-        setMatches(prevMatches => prevMatches.filter(m => m.id !== matchId))
-      }
+      // UIから即座に削除
+      setMatches(prevMatches => prevMatches.filter(m => m.id !== matchId))
     } catch (error) {
       console.error('Error deleting match:', error)
       alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`)

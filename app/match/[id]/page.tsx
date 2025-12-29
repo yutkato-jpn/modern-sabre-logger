@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getMatch, getPoints, addPoint, updateMatchScore, deleteLatestPoint } from '@/utils/supabase'
+// サーバー側のAPIルートを使用するため、utils/supabaseからのインポートは不要
 import { Match, Point } from '@/utils/supabase'
 import PointModal from '@/components/PointModal'
 import Header from '@/components/Header'
@@ -92,8 +92,8 @@ export default function MatchPage({ params }: MatchPageProps) {
           setPoints(pointsData)
           
           // スコアを計算
-          const meScore = pointsData.filter(p => p.scorer === 'me').length
-          const opponentScore = pointsData.filter(p => p.scorer === 'opponent').length
+          const meScore = pointsData.filter((p: Point) => p.scorer === 'me').length
+          const opponentScore = pointsData.filter((p: Point) => p.scorer === 'opponent').length
           setScoreMe(meScore)
           setScoreOpponent(opponentScore)
         }
@@ -139,18 +139,26 @@ export default function MatchPage({ params }: MatchPageProps) {
       const currentScoreMe = scoreMe
       const currentScoreOpponent = scoreOpponent
 
-      const result = await addPoint(
-        match.id,
-        selectedScorer,
-        situation,
-        phrase,
-        currentScoreMe,
-        currentScoreOpponent,
-        note
-      )
-      
-      if (result.error) {
-        alert(`ポイントの保存に失敗しました: ${result.error.message}`)
+      // サーバー側のAPIルートを使用
+      const response = await fetch(`/api/matches/${match.id}/points`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scorer: selectedScorer,
+          situation,
+          phrase,
+          scoreMeAtTime: currentScoreMe,
+          scoreOpponentAtTime: currentScoreOpponent,
+          note,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        alert(`ポイントの保存に失敗しました: ${result.error || 'Unknown error'}`)
         return
       }
 
@@ -160,7 +168,7 @@ export default function MatchPage({ params }: MatchPageProps) {
         } else {
           setScoreOpponent(prev => prev + 1)
         }
-        setPoints(prev => [...prev, result.data!])
+        setPoints(prev => [...prev, result.data])
         setIsModalOpen(false)
         setSelectedScorer(null)
         setLastScoredColor(null)
@@ -177,21 +185,26 @@ export default function MatchPage({ params }: MatchPageProps) {
 
     setIsUndoing(true)
     try {
-      const result = await deleteLatestPoint(match.id)
-      
-      if (result.error) {
-        alert(`削除に失敗しました: ${result.error.message}`)
+      // サーバー側のAPIルートを使用
+      const response = await fetch(`/api/matches/${match.id}/points/latest`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        alert(`削除に失敗しました: ${result.error || 'Unknown error'}`)
         setIsUndoing(false)
         return
       }
 
-      if (result.success && result.deletedPoint) {
-        if (result.deletedPoint.scorer === 'me') {
+      if (result.data) {
+        if (result.data.scorer === 'me') {
           setScoreMe(prev => Math.max(0, prev - 1))
         } else {
           setScoreOpponent(prev => Math.max(0, prev - 1))
         }
-        setPoints(prev => prev.filter(p => p.id !== result.deletedPoint!.id))
+        setPoints(prev => prev.filter((p: Point) => p.id !== result.data.id))
         setLastScoredColor(null)
       }
       setIsUndoing(false)
@@ -207,13 +220,27 @@ export default function MatchPage({ params }: MatchPageProps) {
     if (confirm('試合を終了しますか？')) {
       setIsEnding(true)
       try {
-        const result = await updateMatchScore(match.id, scoreMe, scoreOpponent)
-        if (result.success) {
-          router.push('/')
-        } else {
-          alert(result.error ? `試合終了の保存に失敗しました: ${result.error.message}` : '試合終了の保存に失敗しました')
+        // サーバー側のAPIルートを使用
+        const response = await fetch(`/api/matches/${match.id}/score`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            finalScoreMe: scoreMe,
+            finalScoreOpponent: scoreOpponent,
+          }),
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          alert(`試合終了の保存に失敗しました: ${result.error || 'Unknown error'}`)
           setIsEnding(false)
+          return
         }
+
+        router.push('/')
       } catch (error) {
         alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`)
         setIsEnding(false)

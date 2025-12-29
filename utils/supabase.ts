@@ -376,10 +376,18 @@ export interface PointWithMatch extends Point {
 }
 
 export async function getRecentPointsWithMatches(limit: number = 100, client = supabase): Promise<PointWithMatch[]> {
-  // 最新の試合から順に取得（RLSにより自動的に自分のデータのみ取得される）
+  // 現在のユーザーIDを取得
+  const { data: { user }, error: userError } = await client.auth.getUser()
+  if (userError || !user) {
+    console.error('Error getting user:', userError)
+    return []
+  }
+
+  // 最新の試合から順に取得（明示的にuser_idでフィルタリング）
   const { data: matches, error: matchesError } = await client
     .from('matches')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -394,11 +402,12 @@ export async function getRecentPointsWithMatches(limit: number = 100, client = s
 
   const matchIds = matches.map(m => m.id)
 
-  // これらの試合のポイントを取得（RLSにより自動的に自分のデータのみ取得される）
+  // これらの試合のポイントを取得（明示的にuser_idでフィルタリング）
   const { data: points, error: pointsError } = await client
     .from('points')
     .select('*')
     .in('match_id', matchIds)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(limit)
 

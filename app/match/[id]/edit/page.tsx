@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getMatch, getPoints, updatePoint } from '@/utils/supabase'
+// サーバー側のAPIルートを使用するため、utils/supabaseからのインポートは不要
 import { Match, Point } from '@/utils/supabase'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale/ja'
@@ -70,17 +70,32 @@ export default function EditMatchPage({ params }: EditMatchPageProps) {
     note?: string
   ) => {
     try {
-      const result = await updatePoint(pointId, situation, phrase, note)
-      if (result.success) {
-        await loadData()
-        setEditingPoint(null)
-      } else {
+      // サーバー側のAPIルートを使用
+      const response = await fetch(`/api/matches/${params.id}/points/${pointId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          situation,
+          phrase,
+          note,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
         const errorMsg = result.error 
-          ? `ポイントの更新に失敗しました: ${result.error.message}`
+          ? `ポイントの更新に失敗しました: ${result.error}`
           : 'ポイントの更新に失敗しました'
-        console.error('Error updating point:', result.error)
+        console.error('Error updating point:', result)
         alert(errorMsg)
+        return
       }
+
+      await loadData()
+      setEditingPoint(null)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Unexpected error updating point:', error)
