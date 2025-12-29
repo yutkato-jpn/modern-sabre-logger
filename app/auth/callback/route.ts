@@ -46,6 +46,11 @@ export async function GET(request: NextRequest) {
     const codeVerifierCookies = requestCookies.filter(c => c.name.includes('code-verifier') || c.name.includes('verifier'))
     console.log('[Auth Callback] Code verifier cookies:', codeVerifierCookies.map(c => ({ name: c.name, hasValue: !!c.value })))
     
+    // Next.js 14では、exchangeCodeForSessionを呼ぶ前に明示的にcookies().getAll()を実行する必要がある
+    // これにより、Next.jsがCookieを読み取り、code_verifierが利用可能になる
+    const allCookiesBeforeExchange = cookieStore.getAll()
+    console.log('[Auth Callback] Cookies before exchangeCodeForSession:', allCookiesBeforeExchange.map(c => c.name))
+    
     // exchangeCodeForSessionを呼ぶ（この時、setAllが呼ばれ、tempResponseにCookieが設定される）
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
