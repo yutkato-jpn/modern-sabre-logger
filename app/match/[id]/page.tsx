@@ -278,15 +278,41 @@ export default function MatchPage({ params }: MatchPageProps) {
   const scoreRed = match.my_color === 'red' ? scoreMe : scoreOpponent
   const scoreGreen = match.my_color === 'green' ? scoreMe : scoreOpponent
 
+  // 強制横向き回転のスタイル定義
+  const landscapeStyle = `
+    @media screen and (orientation: portrait) {
+      .force-landscape-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vh; /* 高さを幅にする */
+        height: 100vw; /* 幅を高さにする */
+        transform: rotate(90deg) translateY(-100vw);
+        transform-origin: top left;
+        z-index: 9999;
+        background: #000000; /* 背景色 */
+        overflow: hidden;
+      }
+    }
+    @media screen and (orientation: landscape) {
+      .force-landscape-container {
+        width: 100%;
+        height: 100dvh;
+      }
+    }
+  `
+
   return (
-    <div className="min-h-screen bg-black force-landscape">
-      <div className="force-landscape-content">
-        {/* 審判機画面ではHeaderを非表示 */}
-        <div className="hidden md:block">
-          <Header />
-        </div>
-        <div className="p-4">
-          <div className="max-w-7xl mx-auto">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: landscapeStyle }} />
+      <div className="force-landscape-container min-h-screen bg-black">
+        <div className="force-landscape-content">
+          {/* 審判機画面ではHeaderを非表示 */}
+          <div className="hidden md:block">
+            <Header />
+          </div>
+          <div className="p-4">
+            <div className="max-w-7xl mx-auto">
         {/* ホームへ戻るボタン */}
         <button
           onClick={handleCancelMatch}
@@ -413,21 +439,22 @@ export default function MatchPage({ params }: MatchPageProps) {
             <span>試合終了</span>
           </button>
         </div>
+            </div>
+          </div>
         </div>
-        </div>
-      </div>
 
-      {/* ポイント記録モーダル */}
-      {isModalOpen && selectedScorer && (
-        <PointModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false)
-            setSelectedScorer(null)
-          }}
-          onSave={handlePointSave}
-        />
-      )}
-    </div>
+        {/* ポイント記録モーダル */}
+        {isModalOpen && selectedScorer && (
+          <PointModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false)
+              setSelectedScorer(null)
+            }}
+            onSave={handlePointSave}
+          />
+        )}
+      </div>
+    </>
   )
 }

@@ -14,6 +14,11 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="SabreLog" />
         <link 
           href="https://cdn.jsdelivr.net/npm/digital-7-font@1.0.0/dist/digital-7.css" 
           rel="stylesheet" 
