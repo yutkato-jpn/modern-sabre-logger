@@ -457,7 +457,7 @@ export default function MatchPage({ params }: MatchPageProps) {
           </button>
 
           {/* 中央：タイマーとボタン */}
-          <div className="flex flex-col items-center justify-center w-[20vmin] flex-shrink-0 z-10 border-x-2 border-gray-700 px-[2vmin]">
+          <div className="flex flex-col items-center justify-center flex-shrink-0 z-10 border-x-2 border-gray-700 px-[1.5vmin]">
             <div className="text-center">
               <div 
                 className="text-neon-yellow leading-none mb-1 font-digital"
