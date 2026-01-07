@@ -313,141 +313,190 @@ export default function MatchPage({ params }: MatchPageProps) {
     <>
       <style dangerouslySetInnerHTML={{ __html: landscapeStyle }} />
       <div className="force-landscape-container min-h-screen bg-black">
-        <div className="force-landscape-content flex-1 flex flex-col min-h-0 w-full">
-          {/* 審判機画面ではHeaderを非表示 */}
-          <div className="hidden md:block">
-            <Header />
-          </div>
-          <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0 w-full">
-            <div className="w-full max-w-[90%] md:max-w-7xl mx-auto flex-1 flex flex-col min-h-0">
-        {/* ホームへ戻るボタン */}
-        <button
-          onClick={handleCancelMatch}
-          className="mb-2 md:mb-4 flex items-center gap-1 md:gap-2 text-gray-400 hover:text-white transition-colors text-[2.5vmin] md:text-sm"
-        >
-          <ArrowLeft className="w-[3vmin] h-[3vmin] md:w-5 md:h-5" />
-          <span>ホームへ</span>
-        </button>
-
-        {/* ヘッダー（小さく） */}
-        <div className="text-center mb-2 md:mb-4">
-          <h1 className="text-[3vmin] md:text-lg text-gray-300 mb-1">{match.opponent_name}</h1>
-          <p className="text-[2.5vmin] md:text-sm text-gray-500">
-            {match.my_color === 'red' ? '自分: 赤（左）' : '自分: 緑（右）'}
-          </p>
-        </div>
-
-        {/* メインの審判器筐体 */}
-        <div className="favero-frame p-2 md:p-8 flex-1 flex flex-col min-h-0 w-full" style={{ maxHeight: '80vh', maxWidth: '90%', aspectRatio: '16/9' }}>
-          {/* 上部LEDアレイ（幅広） */}
-          <div className="grid grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-6 flex-shrink-0">
-            <div className={`led-dot-bar transition-all duration-300 ${
-              lastScoredColor === 'red' ? 'led-array-red' : 'led-array-off'
-            }`} />
-            <div className={`led-dot-bar transition-all duration-300 ${
-              lastScoredColor === 'green' ? 'led-array-green' : 'led-array-off'
-            }`} />
-          </div>
-
-          {/* 横一列レイアウト: [赤スコア] - [タイマー/操作] - [緑スコア] */}
-          <div className="flex items-center justify-center gap-2 md:gap-8 w-full flex-1 min-h-0">
-            {/* 左: 赤スコア */}
-            <button
-              onClick={() => handleScoreTap('red')}
-              className="flex-1 text-center hover:opacity-90 transition-opacity min-w-0"
-            >
-              <div className="flex items-center justify-center gap-1 md:gap-2 mb-1 md:mb-2">
-                <div className="text-[4vmin] md:text-xs text-gray-500 uppercase tracking-wider">RED</div>
-                {match.my_color === 'red' && (
-                  <span className="text-[4vmin] md:text-sm font-bold text-yellow-400">YOU</span>
-                )}
-              </div>
-              <div 
-                className="text-neon-red leading-none font-digital"
-                style={{ 
-                  fontSize: '30vmin',
-                  lineHeight: '1'
-                }}
+        {/* デスクトップ用のレイアウト（縦積み） */}
+        <div className="hidden md:block force-landscape-content flex-1 flex flex-col min-h-0 w-full">
+          <Header />
+          <div className="p-4 flex-1 flex flex-col min-h-0 w-full">
+            <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col min-h-0">
+              <button
+                onClick={handleCancelMatch}
+                className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
               >
-                {String(scoreRed).padStart(2, '0')}
+                <ArrowLeft className="w-5 h-5" />
+                <span>ホームへ</span>
+              </button>
+              <div className="text-center mb-4">
+                <h1 className="text-lg text-gray-300 mb-1">{match.opponent_name}</h1>
+                <p className="text-sm text-gray-500">
+                  {match.my_color === 'red' ? '自分: 赤（左）' : '自分: 緑（右）'}
+                </p>
               </div>
-            </button>
-
-            {/* 中央: タイマーと操作 */}
-            <div className="flex-shrink-0 flex flex-col items-center gap-2 md:gap-4 min-w-0">
-              <div className="text-center">
-                <div 
-                  className="text-neon-yellow leading-none mb-1 md:mb-2 font-digital"
-                  style={{ 
-                    fontSize: '12vmin',
-                    lineHeight: '1'
-                  }}
+              <div className="favero-frame p-8 flex-1 flex flex-col min-h-0 w-full">
+                <div className="grid grid-cols-2 gap-4 mb-6 flex-shrink-0">
+                  <div className={`led-dot-bar transition-all duration-300 ${
+                    lastScoredColor === 'red' ? 'led-array-red' : 'led-array-off'
+                  }`} />
+                  <div className={`led-dot-bar transition-all duration-300 ${
+                    lastScoredColor === 'green' ? 'led-array-green' : 'led-array-off'
+                  }`} />
+                </div>
+                <div className="flex items-center justify-center gap-8 w-full flex-1 min-h-0">
+                  <button
+                    onClick={() => handleScoreTap('red')}
+                    className="flex-1 text-center hover:opacity-90 transition-opacity min-w-0"
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="text-xs text-gray-500 uppercase tracking-wider">RED</div>
+                      {match.my_color === 'red' && (
+                        <span className="text-sm font-bold text-yellow-400">YOU</span>
+                      )}
+                    </div>
+                    <div 
+                      className="text-neon-red leading-none font-digital"
+                      style={{ fontSize: '12rem', lineHeight: '1' }}
+                    >
+                      {String(scoreRed).padStart(2, '0')}
+                    </div>
+                  </button>
+                  <div className="flex-shrink-0 flex flex-col items-center gap-4 min-w-0">
+                    <div className="text-center">
+                      <div 
+                        className="text-neon-yellow leading-none mb-2 font-digital"
+                        style={{ fontSize: '4rem', lineHeight: '1' }}
+                      >
+                        {displayTime}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handlePlayPause}
+                          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+                        >
+                          {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={handleReset}
+                          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleScoreTap('green')}
+                    className="flex-1 text-center hover:opacity-90 transition-opacity min-w-0"
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="text-xs text-gray-500 uppercase tracking-wider">GREEN</div>
+                      {match.my_color === 'green' && (
+                        <span className="text-sm font-bold text-yellow-400">YOU</span>
+                      )}
+                    </div>
+                    <div 
+                      className="text-neon-green leading-none font-digital"
+                      style={{ fontSize: '12rem', lineHeight: '1' }}
+                    >
+                      {String(scoreGreen).padStart(2, '0')}
+                    </div>
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-center items-center gap-3 mt-6">
+                <button
+                  onClick={handleUndo}
+                  disabled={isUndoing || points.length === 0}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 rounded text-sm text-gray-300 flex items-center gap-2 transition-colors"
                 >
-                  {displayTime}
-                </div>
-                <div className="flex gap-1 md:gap-2">
-                  <button
-                    onClick={handlePlayPause}
-                    className="px-2 md:px-3 py-1 md:py-2 bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] md:text-sm transition-colors"
-                  >
-                    {isRunning ? <Pause className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" /> : <Play className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />}
-                  </button>
-                  <button
-                    onClick={handleReset}
-                    className="px-2 md:px-3 py-1 md:py-2 bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] md:text-sm transition-colors"
-                  >
-                    <RotateCcw className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />
-                  </button>
-                </div>
+                  <RotateCcw className="w-4 h-4" />
+                  <span>1本戻す</span>
+                </button>
+                <button
+                  onClick={handleEndMatch}
+                  disabled={isEnding}
+                  className="px-6 py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 rounded text-sm text-gray-300 flex items-center gap-2 transition-colors"
+                >
+                  <Flag className="w-4 h-4" />
+                  <span>試合終了</span>
+                </button>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* 右: 緑スコア */}
-            <button
-              onClick={() => handleScoreTap('green')}
-              className="flex-1 text-center hover:opacity-90 transition-opacity min-w-0"
+        {/* スマホ用のレイアウト（強制横並び） */}
+        <div className="md:hidden flex flex-row w-full h-full items-center justify-between p-[2vmin]">
+          {/* 左：赤チーム */}
+          <button
+            onClick={() => handleScoreTap('red')}
+            className="flex-1 h-full flex flex-col justify-center items-center border-r border-gray-700 hover:opacity-90 transition-opacity min-w-0"
+          >
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <div className="text-[4vmin] text-gray-500 uppercase tracking-wider">RED</div>
+              {match.my_color === 'red' && (
+                <span className="text-[4vmin] font-bold text-yellow-400">YOU</span>
+              )}
+            </div>
+            <div 
+              className="text-neon-red leading-none font-digital"
+              style={{ 
+                fontSize: '30vmin',
+                lineHeight: '1'
+              }}
             >
-              <div className="flex items-center justify-center gap-1 md:gap-2 mb-1 md:mb-2">
-                <div className="text-[4vmin] md:text-xs text-gray-500 uppercase tracking-wider">GREEN</div>
-                {match.my_color === 'green' && (
-                  <span className="text-[4vmin] md:text-sm font-bold text-yellow-400">YOU</span>
-                )}
-              </div>
+              {String(scoreRed).padStart(2, '0')}
+            </div>
+          </button>
+
+          {/* 中央：タイマーとボタン */}
+          <div className="flex flex-col items-center justify-center w-[20vmin] flex-shrink-0 z-10">
+            <div className="text-center">
               <div 
-                className="text-neon-green leading-none font-digital"
+                className="text-neon-yellow leading-none mb-1 font-digital"
                 style={{ 
-                  fontSize: '30vmin',
+                  fontSize: '12vmin',
                   lineHeight: '1'
                 }}
               >
-                {String(scoreGreen).padStart(2, '0')}
+                {displayTime}
               </div>
-            </button>
-          </div>
-        </div>
-
-        {/* 下部操作ボタン（目立たないデザイン） */}
-        <div className="flex justify-center items-center gap-2 md:gap-3 mt-2 md:mt-6">
-          <button
-            onClick={handleUndo}
-            disabled={isUndoing || points.length === 0}
-            className="px-2 md:px-4 py-1 md:py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 rounded text-[3vmin] md:text-sm text-gray-300 flex items-center gap-1 md:gap-2 transition-colors"
-          >
-            <RotateCcw className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />
-            <span>1本戻す</span>
-          </button>
-          
-          <button
-            onClick={handleEndMatch}
-            disabled={isEnding}
-            className="px-3 md:px-6 py-1 md:py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 rounded text-[2.5vmin] md:text-sm text-gray-300 flex items-center gap-1 md:gap-2 transition-colors"
-          >
-            <Flag className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />
-            <span>試合終了</span>
-          </button>
-        </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={handlePlayPause}
+                  className="w-[8vmin] h-[8vmin] bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] transition-colors flex items-center justify-center"
+                >
+                  {isRunning ? <Pause className="w-[4vmin] h-[4vmin]" /> : <Play className="w-[4vmin] h-[4vmin]" />}
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="w-[8vmin] h-[8vmin] bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] transition-colors flex items-center justify-center"
+                >
+                  <RotateCcw className="w-[4vmin] h-[4vmin]" />
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* 右：緑チーム */}
+          <button
+            onClick={() => handleScoreTap('green')}
+            className="flex-1 h-full flex flex-col justify-center items-center border-l border-gray-700 hover:opacity-90 transition-opacity min-w-0"
+          >
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <div className="text-[4vmin] text-gray-500 uppercase tracking-wider">GREEN</div>
+              {match.my_color === 'green' && (
+                <span className="text-[4vmin] font-bold text-yellow-400">YOU</span>
+              )}
+            </div>
+            <div 
+              className="text-neon-green leading-none font-digital"
+              style={{ 
+                fontSize: '30vmin',
+                lineHeight: '1'
+              }}
+            >
+              {String(scoreGreen).padStart(2, '0')}
+            </div>
+          </button>
         </div>
 
         {/* ポイント記録モーダル */}
