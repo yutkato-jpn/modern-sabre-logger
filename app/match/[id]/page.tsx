@@ -282,23 +282,24 @@ export default function MatchPage({ params }: MatchPageProps) {
   const landscapeStyle = `
     @media screen and (orientation: portrait) {
       .force-landscape-container {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: 100dvh; /* 画面の高さを幅として使う */
-        height: 100vw; /* 画面の幅を高さとして使う */
-        transform: translate(-50%, -50%) rotate(90deg);
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        width: 100dvh !important; /* 画面の高さを幅として使う */
+        height: 100vw !important; /* 画面の幅を高さとして使う */
+        transform: translate(-50%, -50%) rotate(90deg) !important;
         z-index: 9999;
-        background: #111111;
-        border: 8px solid #1f2937;
-        border-radius: 0.5rem;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: row; /* 横並びレイアウト */
-        justify-content: space-between;
-        align-items: center;
-        overflow: hidden;
-        padding: 2vmin;
+        background: #111111 !important;
+        border: 8px solid #1f2937 !important;
+        border-radius: 0.5rem !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: row !important; /* 横並びレイアウト */
+        justify-content: space-between !important;
+        align-items: center !important;
+        overflow: hidden !important;
+        padding: 2vmin !important;
+        margin: 0 !important;
       }
     }
     @media screen and (orientation: landscape) {
@@ -320,9 +321,9 @@ export default function MatchPage({ params }: MatchPageProps) {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: landscapeStyle }} />
-      <div className="force-landscape-container min-h-screen bg-black">
+      <div className="force-landscape-container">
         {/* デスクトップ用のレイアウト（縦積み） */}
-        <div className="hidden md:block force-landscape-content flex-1 flex flex-col min-h-0 w-full">
+        <div className="hidden md:flex force-landscape-content flex-1 flex flex-col min-h-0 w-full">
           <Header />
           <div className="p-4 flex-1 flex flex-col min-h-0 w-full">
             <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col min-h-0">
@@ -432,7 +433,7 @@ export default function MatchPage({ params }: MatchPageProps) {
         </div>
 
         {/* スマホ用のレイアウト（強制横並び） */}
-        <div className="md:hidden flex flex-row w-full h-full items-center justify-between">
+        <div className="md:hidden flex flex-row w-full h-full items-center justify-between gap-0">
           {/* 左：赤チーム */}
           <button
             onClick={() => handleScoreTap('red')}
@@ -456,7 +457,7 @@ export default function MatchPage({ params }: MatchPageProps) {
           </button>
 
           {/* 中央：タイマーとボタン */}
-          <div className="flex flex-col items-center justify-center w-[20vmin] flex-shrink-0 z-10">
+          <div className="flex flex-col items-center justify-center w-[20vmin] flex-shrink-0 z-10 border-x-2 border-gray-700 px-[2vmin]">
             <div className="text-center">
               <div 
                 className="text-neon-yellow leading-none mb-1 font-digital"
@@ -467,7 +468,7 @@ export default function MatchPage({ params }: MatchPageProps) {
               >
                 {displayTime}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 justify-center">
                 <button
                   onClick={handlePlayPause}
                   className="w-[8vmin] h-[8vmin] bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] transition-colors flex items-center justify-center"
