@@ -101,5 +101,36 @@
     background: #2a2a2a;
     box-shadow: none;
   }
+
+  /* 審判機画面の強制横向き表示（ポートレート時） */
+  .force-landscape {
+    /* デフォルト（ランドスケープ時）は通常表示 */
+    @media (orientation: portrait) {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vh;
+      height: 100vw;
+      /* 回転と位置調整を同時に行う: 画面の中心を基準に回転 */
+      transform: translate(calc(50vw - 50vh), calc(50vh - 50vw)) rotate(90deg);
+      transform-origin: center center;
+      /* オーバーフローを防ぐ */
+      overflow: hidden;
+      /* z-indexを高くして他の要素の上に表示 */
+      z-index: 9999;
+      /* タッチ操作を有効にする */
+      touch-action: manipulation;
+    }
+  }
+
+  /* 審判機画面のコンテンツコンテナ（回転時のサイズ調整） */
+  .force-landscape-content {
+    @media (orientation: portrait) {
+      width: 100vw;
+      height: 100vh;
+      /* 回転後のスクロールを防ぐ */
+      overflow: hidden;
+    }
+  }
 }
 

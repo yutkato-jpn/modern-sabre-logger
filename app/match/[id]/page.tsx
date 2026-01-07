@@ -279,10 +279,14 @@ export default function MatchPage({ params }: MatchPageProps) {
   const scoreGreen = match.my_color === 'green' ? scoreMe : scoreOpponent
 
   return (
-    <div className="min-h-screen bg-black">
-      <Header />
-      <div className="p-4">
-        <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black force-landscape">
+      <div className="force-landscape-content">
+        {/* 審判機画面ではHeaderを非表示 */}
+        <div className="hidden md:block">
+          <Header />
+        </div>
+        <div className="p-4">
+          <div className="max-w-7xl mx-auto">
         {/* ホームへ戻るボタン */}
         <button
           onClick={handleCancelMatch}
@@ -408,6 +412,7 @@ export default function MatchPage({ params }: MatchPageProps) {
             <Flag className="w-4 h-4" />
             <span>試合終了</span>
           </button>
+        </div>
         </div>
         </div>
       </div>
