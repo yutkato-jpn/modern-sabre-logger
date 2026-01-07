@@ -285,16 +285,20 @@ export default function MatchPage({ params }: MatchPageProps) {
         position: fixed;
         top: 50%;
         left: 50%;
-        width: 100dvh; /* dvhを使用してアドレスバーの影響を回避 */
-        height: 100vw;
+        width: 100dvh; /* 画面の高さを幅として使う */
+        height: 100vw; /* 画面の幅を高さとして使う */
         transform: translate(-50%, -50%) rotate(90deg);
         z-index: 9999;
-        background: #000000;
+        background: #111111;
+        border: 8px solid #1f2937;
+        border-radius: 0.5rem;
+        box-sizing: border-box;
         display: flex;
-        flex-direction: column;
-        justify-content: center; /* 垂直方向中央揃え */
-        align-items: center;     /* 水平方向中央揃え */
+        flex-direction: row; /* 横並びレイアウト */
+        justify-content: space-between;
+        align-items: center;
         overflow: hidden;
+        padding: 2vmin;
       }
     }
     @media screen and (orientation: landscape) {
@@ -305,6 +309,10 @@ export default function MatchPage({ params }: MatchPageProps) {
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        background: #000000;
+        border: none;
+        border-radius: 0;
+        padding: 0;
       }
     }
   `
@@ -424,19 +432,11 @@ export default function MatchPage({ params }: MatchPageProps) {
         </div>
 
         {/* スマホ用のレイアウト（強制横並び） */}
-        <div 
-          className="md:hidden flex flex-row w-full h-full items-center justify-between overflow-hidden"
-          style={{
-            background: '#111111',
-            border: '8px solid #1f2937',
-            borderRadius: '0.5rem',
-            padding: '2vmin'
-          }}
-        >
+        <div className="md:hidden flex flex-row w-full h-full items-center justify-between">
           {/* 左：赤チーム */}
           <button
             onClick={() => handleScoreTap('red')}
-            className="flex-1 h-full flex flex-col justify-center items-center border-r-2 border-gray-700 hover:opacity-90 transition-opacity min-w-0"
+            className="flex-1 h-full flex flex-col justify-center items-center border-r-2 border-gray-700 hover:opacity-90 transition-opacity min-w-0 w-full"
           >
             <div className="flex items-center justify-center gap-1 mb-1">
               <div className="text-[4vmin] text-gray-500 uppercase tracking-wider">RED</div>
@@ -487,7 +487,7 @@ export default function MatchPage({ params }: MatchPageProps) {
           {/* 右：緑チーム */}
           <button
             onClick={() => handleScoreTap('green')}
-            className="flex-1 h-full flex flex-col justify-center items-center border-l-2 border-gray-700 hover:opacity-90 transition-opacity min-w-0"
+            className="flex-1 h-full flex flex-col justify-center items-center border-l-2 border-gray-700 hover:opacity-90 transition-opacity min-w-0 w-full"
           >
             <div className="flex items-center justify-center gap-1 mb-1">
               <div className="text-[4vmin] text-gray-500 uppercase tracking-wider">GREEN</div>
