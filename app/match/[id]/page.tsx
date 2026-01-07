@@ -285,14 +285,16 @@ export default function MatchPage({ params }: MatchPageProps) {
         position: fixed;
         top: 50%;
         left: 50%;
-        width: 100vh; /* 画面の高さを幅に */
-        height: 100vw; /* 画面の幅を高さに */
-        transform: translate(-50%, -50%) rotate(90deg); /* 中心を軸に回転 */
-        overflow: hidden;
+        width: 100dvh; /* dvhを使用してアドレスバーの影響を回避 */
+        height: 100vw;
+        transform: translate(-50%, -50%) rotate(90deg);
         z-index: 9999;
         background: #000000;
         display: flex;
         flex-direction: column;
+        justify-content: center; /* 垂直方向中央揃え */
+        align-items: center;     /* 水平方向中央揃え */
+        overflow: hidden;
       }
     }
     @media screen and (orientation: landscape) {
@@ -301,6 +303,8 @@ export default function MatchPage({ params }: MatchPageProps) {
         height: 100dvh;
         display: flex;
         flex-direction: column;
+        justify-content: center;
+        align-items: center;
       }
     }
   `
@@ -314,8 +318,8 @@ export default function MatchPage({ params }: MatchPageProps) {
           <div className="hidden md:block">
             <Header />
           </div>
-          <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0">
-            <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
+          <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0 w-full">
+            <div className="w-full max-w-[90%] md:max-w-7xl mx-auto flex-1 flex flex-col min-h-0">
         {/* ホームへ戻るボタン */}
         <button
           onClick={handleCancelMatch}
@@ -334,9 +338,9 @@ export default function MatchPage({ params }: MatchPageProps) {
         </div>
 
         {/* メインの審判器筐体 */}
-        <div className="favero-frame p-2 md:p-8 flex-1 flex flex-col min-h-0">
+        <div className="favero-frame p-2 md:p-8 flex-1 flex flex-col min-h-0 w-full" style={{ maxHeight: '80vh', maxWidth: '90%', aspectRatio: '16/9' }}>
           {/* 上部LEDアレイ（幅広） */}
-          <div className="grid grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-6">
+          <div className="grid grid-cols-2 gap-2 md:gap-4 mb-2 md:mb-6 flex-shrink-0">
             <div className={`led-dot-bar transition-all duration-300 ${
               lastScoredColor === 'red' ? 'led-array-red' : 'led-array-off'
             }`} />
@@ -346,22 +350,22 @@ export default function MatchPage({ params }: MatchPageProps) {
           </div>
 
           {/* 横一列レイアウト: [赤スコア] - [タイマー/操作] - [緑スコア] */}
-          <div className="flex items-center justify-center gap-2 md:gap-8 w-full">
+          <div className="flex items-center justify-center gap-2 md:gap-8 w-full flex-1 min-h-0">
             {/* 左: 赤スコア */}
             <button
               onClick={() => handleScoreTap('red')}
               className="flex-1 text-center hover:opacity-90 transition-opacity min-w-0"
             >
               <div className="flex items-center justify-center gap-1 md:gap-2 mb-1 md:mb-2">
-                <div className="text-[2vmin] md:text-xs text-gray-500 uppercase tracking-wider">RED</div>
+                <div className="text-[4vmin] md:text-xs text-gray-500 uppercase tracking-wider">RED</div>
                 {match.my_color === 'red' && (
-                  <span className="text-[2.5vmin] md:text-sm font-bold text-yellow-400">YOU</span>
+                  <span className="text-[4vmin] md:text-sm font-bold text-yellow-400">YOU</span>
                 )}
               </div>
               <div 
                 className="text-neon-red leading-none font-digital"
                 style={{ 
-                  fontSize: '35vmin',
+                  fontSize: '30vmin',
                   lineHeight: '1'
                 }}
               >
@@ -375,7 +379,7 @@ export default function MatchPage({ params }: MatchPageProps) {
                 <div 
                   className="text-neon-yellow leading-none mb-1 md:mb-2 font-digital"
                   style={{ 
-                    fontSize: '15vmin',
+                    fontSize: '12vmin',
                     lineHeight: '1'
                   }}
                 >
@@ -384,13 +388,13 @@ export default function MatchPage({ params }: MatchPageProps) {
                 <div className="flex gap-1 md:gap-2">
                   <button
                     onClick={handlePlayPause}
-                    className="px-2 md:px-3 py-1 md:py-2 bg-gray-700 hover:bg-gray-600 rounded text-[2vmin] md:text-sm transition-colors"
+                    className="px-2 md:px-3 py-1 md:py-2 bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] md:text-sm transition-colors"
                   >
                     {isRunning ? <Pause className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" /> : <Play className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />}
                   </button>
                   <button
                     onClick={handleReset}
-                    className="px-2 md:px-3 py-1 md:py-2 bg-gray-700 hover:bg-gray-600 rounded text-[2vmin] md:text-sm transition-colors"
+                    className="px-2 md:px-3 py-1 md:py-2 bg-gray-700 hover:bg-gray-600 rounded text-[3vmin] md:text-sm transition-colors"
                   >
                     <RotateCcw className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />
                   </button>
@@ -404,15 +408,15 @@ export default function MatchPage({ params }: MatchPageProps) {
               className="flex-1 text-center hover:opacity-90 transition-opacity min-w-0"
             >
               <div className="flex items-center justify-center gap-1 md:gap-2 mb-1 md:mb-2">
-                <div className="text-[2vmin] md:text-xs text-gray-500 uppercase tracking-wider">GREEN</div>
+                <div className="text-[4vmin] md:text-xs text-gray-500 uppercase tracking-wider">GREEN</div>
                 {match.my_color === 'green' && (
-                  <span className="text-[2.5vmin] md:text-sm font-bold text-yellow-400">YOU</span>
+                  <span className="text-[4vmin] md:text-sm font-bold text-yellow-400">YOU</span>
                 )}
               </div>
               <div 
                 className="text-neon-green leading-none font-digital"
                 style={{ 
-                  fontSize: '35vmin',
+                  fontSize: '30vmin',
                   lineHeight: '1'
                 }}
               >
@@ -427,7 +431,7 @@ export default function MatchPage({ params }: MatchPageProps) {
           <button
             onClick={handleUndo}
             disabled={isUndoing || points.length === 0}
-            className="px-2 md:px-4 py-1 md:py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 rounded text-[2.5vmin] md:text-sm text-gray-300 flex items-center gap-1 md:gap-2 transition-colors"
+            className="px-2 md:px-4 py-1 md:py-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 rounded text-[3vmin] md:text-sm text-gray-300 flex items-center gap-1 md:gap-2 transition-colors"
           >
             <RotateCcw className="w-[3vmin] h-[3vmin] md:w-4 md:h-4" />
             <span>1本戻す</span>
