@@ -1,16 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Plus, History } from 'lucide-react'
 import { Match } from '@/utils/supabase'
 import MatchHistory from '@/components/MatchHistory'
 import AICoachReport from '@/components/AICoachReport'
 import Header from '@/components/Header'
+import MatchSearchFilter from '@/components/MatchSearchFilter'
 
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [filterTags, setFilterTags] = useState<string[]>([])
+  const [filterStartDate, setFilterStartDate] = useState<string | null>(null)
+  const [filterEndDate, setFilterEndDate] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -75,6 +79,64 @@ export default function Home() {
     }
   }
 
+  const handleFilter = (filters: {
+    selectedTags: string[]
+    startDate: string | null
+    endDate: string | null
+  }) => {
+    setFilterTags(filters.selectedTags)
+    setFilterStartDate(filters.startDate)
+    setFilterEndDate(filters.endDate)
+  }
+
+  const handleResetFilter = () => {
+    setFilterTags([])
+    setFilterStartDate(null)
+    setFilterEndDate(null)
+  }
+
+  // フィルタリングされた試合一覧
+  const filteredMatches = useMemo(() => {
+    let filtered = [...matches]
+
+    // タグでフィルタリング
+    if (filterTags.length > 0) {
+      filtered = filtered.filter(match => {
+        if (!match.tags || match.tags.length === 0) return false
+        // 選択されたタグのいずれかが含まれているか
+        return filterTags.some(tag => match.tags?.includes(tag))
+      })
+    }
+
+    // 日付範囲でフィルタリング
+    if (filterStartDate) {
+      const start = new Date(filterStartDate)
+      start.setHours(0, 0, 0, 0)
+      filtered = filtered.filter(match => {
+        if (!match.created_at && !match.match_date) return false
+        const matchDate = match.match_date 
+          ? new Date(match.match_date)
+          : new Date(match.created_at!)
+        matchDate.setHours(0, 0, 0, 0)
+        return matchDate >= start
+      })
+    }
+
+    if (filterEndDate) {
+      const end = new Date(filterEndDate)
+      end.setHours(23, 59, 59, 999)
+      filtered = filtered.filter(match => {
+        if (!match.created_at && !match.match_date) return false
+        const matchDate = match.match_date 
+          ? new Date(match.match_date)
+          : new Date(match.created_at!)
+        return matchDate <= end
+      })
+    }
+
+    return filtered
+  }, [matches, filterTags, filterStartDate, filterEndDate])
+
   return (
     <div className="min-h-screen bg-black">
       <Header />
@@ -103,10 +165,37 @@ export default function Home() {
             <History className="w-5 h-5" />
             <h2 className="text-2xl font-semibold">過去の記録</h2>
           </div>
+          
+          {/* 検索・フィルター */}
+          {!isLoading && (
+            <div className="mb-4">
+              <MatchSearchFilter
+                onFilter={handleFilter}
+                onReset={handleResetFilter}
+              />
+            </div>
+          )}
+
+          {/* 検索結果の件数表示 */}
+          {!isLoading && (filterTags.length > 0 || filterStartDate || filterEndDate) && (
+            <div className="mb-4 text-sm text-gray-400">
+              検索結果: {filteredMatches.length}件
+              {matches.length !== filteredMatches.length && (
+                <span> (全{matches.length}件中)</span>
+              )}
+            </div>
+          )}
+
           {isLoading ? (
             <p className="text-gray-400">読み込み中...</p>
+          ) : filteredMatches.length === 0 ? (
+            <p className="text-gray-400">
+              {(filterTags.length > 0 || filterStartDate || filterEndDate)
+                ? '検索条件に一致する試合記録がありません。'
+                : 'まだ試合記録がありません。'}
+            </p>
           ) : (
-            <MatchHistory matches={matches} onDelete={handleDeleteMatch} />
+            <MatchHistory matches={filteredMatches} onDelete={handleDeleteMatch} />
           )}
         </div>
         </div>
