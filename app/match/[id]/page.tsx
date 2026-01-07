@@ -424,11 +424,19 @@ export default function MatchPage({ params }: MatchPageProps) {
         </div>
 
         {/* スマホ用のレイアウト（強制横並び） */}
-        <div className="md:hidden flex flex-row w-full h-full items-center justify-between p-[2vmin]">
+        <div 
+          className="md:hidden flex flex-row w-full h-full items-center justify-between overflow-hidden"
+          style={{
+            background: '#111111',
+            border: '8px solid #1f2937',
+            borderRadius: '0.5rem',
+            padding: '2vmin'
+          }}
+        >
           {/* 左：赤チーム */}
           <button
             onClick={() => handleScoreTap('red')}
-            className="flex-1 h-full flex flex-col justify-center items-center border-r border-gray-700 hover:opacity-90 transition-opacity min-w-0"
+            className="flex-1 h-full flex flex-col justify-center items-center border-r-2 border-gray-700 hover:opacity-90 transition-opacity min-w-0"
           >
             <div className="flex items-center justify-center gap-1 mb-1">
               <div className="text-[4vmin] text-gray-500 uppercase tracking-wider">RED</div>
@@ -479,7 +487,7 @@ export default function MatchPage({ params }: MatchPageProps) {
           {/* 右：緑チーム */}
           <button
             onClick={() => handleScoreTap('green')}
-            className="flex-1 h-full flex flex-col justify-center items-center border-l border-gray-700 hover:opacity-90 transition-opacity min-w-0"
+            className="flex-1 h-full flex flex-col justify-center items-center border-l-2 border-gray-700 hover:opacity-90 transition-opacity min-w-0"
           >
             <div className="flex items-center justify-center gap-1 mb-1">
               <div className="text-[4vmin] text-gray-500 uppercase tracking-wider">GREEN</div>
