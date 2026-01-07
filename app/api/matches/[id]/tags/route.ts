@@ -9,7 +9,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { finalScoreMe, finalScoreOpponent, tags } = body
+    const { tags } = body
 
     const supabase = await createClient()
 
@@ -37,26 +37,26 @@ export async function PUT(
       )
     }
 
-    // スコアとタグを更新
-    const { error } = await supabase
+    // タグを更新
+    const { data, error } = await supabase
       .from('matches')
       .update({
-        final_score_me: finalScoreMe,
-        final_score_opponent: finalScoreOpponent,
         tags: tags || null,
       })
       .eq('id', params.id)
       .eq('user_id', user.id)
+      .select()
+      .single()
 
     if (error) {
-      console.error('[API] Error updating match score:', error)
+      console.error('[API] Error updating match tags:', error)
       return NextResponse.json(
-        { error: error.message || 'スコアの更新に失敗しました' },
+        { error: error.message || 'タグの更新に失敗しました' },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ success: true }, { status: 200 })
+    return NextResponse.json({ data }, { status: 200 })
   } catch (error) {
     console.error('[API] Unexpected error:', error)
     return NextResponse.json(

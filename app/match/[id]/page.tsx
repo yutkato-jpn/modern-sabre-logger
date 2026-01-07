@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Match, Point } from '@/utils/supabase'
 import PointModal from '@/components/PointModal'
 import Header from '@/components/Header'
+import TagSelector from '@/components/TagSelector'
 import { Flag, RotateCcw, Play, Pause, X, ArrowLeft } from 'lucide-react'
 
 interface MatchPageProps {
@@ -23,6 +24,8 @@ export default function MatchPage({ params }: MatchPageProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedScorer, setSelectedScorer] = useState<'me' | 'opponent' | null>(null)
   const [isEnding, setIsEnding] = useState(false)
+  const [showTagModal, setShowTagModal] = useState(false)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [lastScoredColor, setLastScoredColor] = useState<'red' | 'green' | null>(null)
   const [isUndoing, setIsUndoing] = useState(false)
   const [time, setTime] = useState(180)
@@ -85,6 +88,10 @@ export default function MatchPage({ params }: MatchPageProps) {
 
       if (matchData) {
         setMatch(matchData)
+        // 既存のタグを設定
+        if (matchData.tags && Array.isArray(matchData.tags)) {
+          setSelectedTags(matchData.tags)
+        }
 
         if (pointsResponse.ok) {
           const pointsResult = await pointsResponse.json()
@@ -214,37 +221,42 @@ export default function MatchPage({ params }: MatchPageProps) {
     }
   }
 
-  const handleEndMatch = async () => {
+  const handleEndMatch = () => {
+    if (!match || !match.id) return
+    setShowTagModal(true)
+  }
+
+  const handleConfirmEndMatch = async () => {
     if (!match || !match.id) return
     
-    if (confirm('試合を終了しますか？')) {
-      setIsEnding(true)
-      try {
-        // サーバー側のAPIルートを使用
-        const response = await fetch(`/api/matches/${match.id}/score`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            finalScoreMe: scoreMe,
-            finalScoreOpponent: scoreOpponent,
-          }),
-        })
+    setIsEnding(true)
+    try {
+      // サーバー側のAPIルートを使用
+      const response = await fetch(`/api/matches/${match.id}/score`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          finalScoreMe: scoreMe,
+          finalScoreOpponent: scoreOpponent,
+          tags: selectedTags,
+        }),
+      })
 
-        const result = await response.json()
+      const result = await response.json()
 
-        if (!response.ok) {
-          alert(`試合終了の保存に失敗しました: ${result.error || 'Unknown error'}`)
-          setIsEnding(false)
-          return
-        }
-
-        router.push('/')
-      } catch (error) {
-        alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      if (!response.ok) {
+        alert(`試合終了の保存に失敗しました: ${result.error || 'Unknown error'}`)
         setIsEnding(false)
+        return
       }
+
+      setShowTagModal(false)
+      router.push('/')
+    } catch (error) {
+      alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setIsEnding(false)
     }
   }
 
@@ -518,6 +530,55 @@ export default function MatchPage({ params }: MatchPageProps) {
             }}
             onSave={handlePointSave}
           />
+        )}
+
+        {/* 試合終了・タグ選択モーダル */}
+        {showTagModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="panel-skeuomorphic rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">試合終了</h2>
+                <button
+                  onClick={() => {
+                    setShowTagModal(false)
+                    setSelectedTags([])
+                  }}
+                  className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-300 mb-4">
+                  試合を終了します。タグを選択して記録を整理できます。
+                </p>
+                <TagSelector
+                  selectedTags={selectedTags}
+                  onChange={setSelectedTags}
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowTagModal(false)
+                    setSelectedTags([])
+                  }}
+                  className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleConfirmEndMatch}
+                  disabled={isEnding}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg text-white font-semibold transition-colors"
+                >
+                  {isEnding ? '保存中...' : '試合を終了'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>

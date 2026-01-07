@@ -12,6 +12,7 @@ export interface Match {
   final_score_me: number
   final_score_opponent: number
   match_date?: string
+  tags?: string[] | null
   created_at?: string
 }
 

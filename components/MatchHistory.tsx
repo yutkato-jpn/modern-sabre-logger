@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { Match } from '@/utils/supabase'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale/ja'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Tag, X } from 'lucide-react'
+import TagSelector from '@/components/TagSelector'
 
 interface MatchHistoryProps {
   matches: Match[]
@@ -14,6 +15,9 @@ interface MatchHistoryProps {
 
 export default function MatchHistory({ matches, onDelete }: MatchHistoryProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingTagsId, setEditingTagsId] = useState<string | null>(null)
+  const [editingTags, setEditingTags] = useState<string[]>([])
+  const [isSavingTags, setIsSavingTags] = useState(false)
 
   const handleDelete = async (e: React.MouseEvent, matchId: string) => {
     e.preventDefault()
@@ -27,6 +31,42 @@ export default function MatchHistory({ matches, onDelete }: MatchHistoryProps) {
 
     if (onDelete) {
       onDelete(matchId)
+    }
+  }
+
+  const handleEditTags = (match: Match) => {
+    setEditingTagsId(match.id)
+    setEditingTags(match.tags || [])
+  }
+
+  const handleSaveTags = async (matchId: string) => {
+    setIsSavingTags(true)
+    try {
+      const response = await fetch(`/api/matches/${matchId}/tags`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tags: editingTags,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        alert(`タグの保存に失敗しました: ${result.error || 'Unknown error'}`)
+        setIsSavingTags(false)
+        return
+      }
+
+      setEditingTagsId(null)
+      setEditingTags([])
+      // ページをリロードして最新のデータを取得
+      window.location.reload()
+    } catch (error) {
+      alert(`エラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setIsSavingTags(false)
     }
   }
 
@@ -58,6 +98,19 @@ export default function MatchHistory({ matches, onDelete }: MatchHistoryProps) {
                     }`} />
                     <span className="text-xs text-gray-400">自分: {match.my_color === 'red' ? '赤' : '緑'}</span>
                   </div>
+                  {/* タグ表示 */}
+                  {match.tags && match.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {match.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 text-xs bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right ml-4">
                   <div className="flex items-center gap-2">
@@ -78,18 +131,77 @@ export default function MatchHistory({ matches, onDelete }: MatchHistoryProps) {
                 </div>
               </div>
             </Link>
-            {/* 削除ボタン */}
-            <button
-              onClick={(e) => handleDelete(e, match.id)}
-              disabled={deletingId === match.id}
-              className="ml-6 p-2 text-red-500 hover:text-red-600 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-              title="削除"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+            {/* アクションボタン */}
+            <div className="ml-6 flex gap-2 flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleEditTags(match)
+                }}
+                className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-900/20 rounded-lg transition-colors"
+                title="タグ編集"
+              >
+                <Tag className="w-5 h-5" />
+              </button>
+              <button
+                onClick={(e) => handleDelete(e, match.id)}
+                disabled={deletingId === match.id}
+                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="削除"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       ))}
+
+      {/* タグ編集モーダル */}
+      {editingTagsId && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="panel-skeuomorphic rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">タグを編集</h2>
+              <button
+                onClick={() => {
+                  setEditingTagsId(null)
+                  setEditingTags([])
+                }}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <TagSelector
+                selectedTags={editingTags}
+                onChange={setEditingTags}
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setEditingTagsId(null)
+                  setEditingTags([])
+                }}
+                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => handleSaveTags(editingTagsId)}
+                disabled={isSavingTags}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg text-white font-semibold transition-colors"
+              >
+                {isSavingTags ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
